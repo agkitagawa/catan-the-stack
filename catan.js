@@ -21,6 +21,8 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyAf2p5Vcgq2Ui9h7n--y-dyWn8SIBQ-8Mk",
   authDomain: "catan-the-stack.firebaseapp.com",
@@ -37,8 +39,24 @@ const db = getFirestore(app);
 let teamColor = "";
 const seniorRole = "Senior";
 let teamResources = {};
-let loggedIn = false;
 let isSenior = false;
+let loggedIn = localStorage.getItem("loggedIn") === "true";
+
+if (loggedIn) {
+  teamColor = localStorage.getItem("teamColor") || "";
+  isSenior = localStorage.getItem("isSenior") === "true";
+  if (isSenior) {
+    seniorSetup();
+    getAllResources();
+    setupAfterLogin();
+  } else {
+    teamSetup(teamColor);
+    setupAfterLogin();
+    getAllResources();
+  }
+} else {
+  showPage("login", false);
+}
 
 const tradeRequestsCol = collection(db, "trade_requests");
 const notificationsCol = collection(db, "notifications");
@@ -70,55 +88,93 @@ function displayMessage(msg) {
   el.classList.remove("hidden");
   setTimeout(() => el.classList.add("hidden"), 5000);
 }
+  
+async function login() {
+    const auth = getAuth();
+  
+    const email = qs("#loginEmail").value.trim();
+    const password = qs("#loginPassword").value.trim();
+  
+    if (!email || !password) {
+      return displayMessage("Please enter an email and password.");
+    }
+  
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      localStorage.setItem("loggedIn", "true");
+  
+      // Load team and show home page
+      loadTeamData(user.uid); // adjust this if needed
+      showPage("home");
+      displayMessage("Login successful!");
+  
+      const uid = user.uid;
+      const usersRef = collection(db, "users");
+        const q = query(usersRef, where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
 
-async function login(event) {
-  event.preventDefault();
+        if (querySnapshot.empty) {
+        displayMessage("User record not found in Firestore.");
+        return;
+        }
 
-  const username = qs("#username").value.trim();
-  const password = qs("#password").value.trim();
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+  
+      localStorage.setItem("loggedIn", "true");
 
-  if (!username || !password) {
-    return displayMessage("Please enter a username and password.");
+      console.log("User data:", userData);
+  
+      if (userData.role === seniorRole) {
+        isSenior = true;
+        localStorage.setItem("isSenior", "true");
+        seniorSetup();
+        await getAllResources();
+        setupAfterLogin();
+      } else if (userData.teamId) {
+        teamColor = userData.teamId;
+        isSenior = false;
+        localStorage.setItem("teamColor", teamColor);
+        teamSetup(teamColor);
+        setupAfterLogin();
+        await getAllResources();
+      } else {
+        displayMessage("No team assigned to this user.");
+      }
+  
+    } catch (err) {
+      console.error("Login error:", err);
+      displayMessage("Login failed: " + err.message);
+    }
   }
+  
 
-  try {
-    const userDocRef = doc(db, "users", username);
-    const userDoc = await getDoc(userDocRef);
-
-    if (!userDoc.exists()) {
-      displayMessage("User not found.");
-      return;
-    }
-
-    const userData = userDoc.data();
-
-    if (userData.password !== password) {
-      displayMessage("Incorrect password.");
-      return;
-    }
-
-    loggedIn = true;
-
-    if (userData.role === seniorRole) {
-      isSenior = true;
-      seniorSetup();
-      await getAllResources();
-      setupAfterLogin();
-    } else if (userData.teamId) {
-      teamColor = userData.teamId;
+function logout() {
+    const auth = getAuth();
+    signOut(auth).then(() => {
+      localStorage.removeItem("loggedIn");
+      teamColor = "";
       isSenior = false;
-      teamSetup(teamColor);
-      setupAfterLogin();
-      await getAllResources();
-      listenForDevCardUpdates();
-    } else {
-      displayMessage("No team assigned to this user.");
-    }
-  } catch (err) {
-    console.error("Login error:", err);
-    displayMessage("Problem logging in. Please refresh and try again.");
+      teamResources = {};
+  
+      showPage("login", false);
+      location.replace("#login");
+      localStorage.removeItem("teamColor");
+      localStorage.removeItem("isSenior");
+      const email = qs("#loginEmail");
+      const password = qs("#loginPassword");
+    email.value = "";
+    password.value = "";
+  
+      displayMessage("You have been logged out.");
+    }).catch((error) => {
+      console.error("Logout failed:", error);
+      displayMessage("Error logging out. Please try again.");
+    });
   }
-}
+  
 
 function seniorSetup() {
   const nav = qs("nav");
@@ -186,6 +242,14 @@ async function populateTeamsDropdown() {
   function showPage(pageId, pushState = true) {
     const pages = document.querySelectorAll(".page");
     pages.forEach(page => page.classList.add("hidden"));
+
+    const nav = qs("nav");
+    if (pageId === "login") {
+      if (nav) nav.classList.add("hidden");
+    } else {
+        if (nav) nav.classList.remove("hidden");
+    }
+    
   
     const page = document.querySelector(`#${pageId}`);
     if (page) {
@@ -334,6 +398,8 @@ async function showPersonalHand() {
           }           else {
             devCardsSection.textContent = "No development cards";
         }
+
+        qs("#personal-hand-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
 
   
       showPage("personal-hand");
@@ -511,7 +577,7 @@ async function submitTradeRequest() {
   
   async function handleTradeResponse(tradeId, accepted) {
     try {
-      const tradeDocRef = doc(tradeRequestsCol, tradeId);
+      const tradeDocRef = doc(db, "trade_requests", tradeId);
       const tradeDoc = await getDoc(tradeDocRef);
   
       if (!tradeDoc.exists()) {
@@ -629,29 +695,6 @@ async function submitTradeRequest() {
           p.innerHTML = `${note.message || "New notification"}<br>${timeString}`;
           notificationPanel.appendChild(p);
         });
-      }
-    });
-  }
-  
-  function listenForDevCardUpdates() {
-    if (!teamColor) return;
-  
-    const teamRef = doc(db, "teams", teamColor);
-    onSnapshot(teamRef, (docSnap) => {
-      if (!docSnap.exists()) return;
-      const data = docSnap.data();
-  
-      const devCardsSection = qs("#dev-cards-in-hand");
-      devCardsSection.innerHTML = "";
-  
-      if (data.development_cards && data.development_cards.length > 0) {
-        data.development_cards.forEach(card => {
-          const p = gen("p");
-          p.textContent = card;
-          devCardsSection.appendChild(p);
-        });
-      } else {
-        devCardsSection.textContent = "No development cards";
       }
     });
   }
@@ -911,11 +954,19 @@ async function submitTradeRequest() {
   const homeBtn = qs("#home-btn");
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
-        if (loggedIn) {
+        if (localStorage.getItem("loggedIn") === "true") {
+            getAllResources();
+            qs("#leaderboard-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
             showPage("home");
         }
     });
   }
+
+  const logoutBtn = qs("#logout-btn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logout);
+}
+
 
   const seniorNotificationsBtn = qs("#senior-notifications-btn");
   if (seniorNotificationsBtn) {
@@ -1187,6 +1238,52 @@ if (manageTradesBtn) {
       select.value = "";
     });
   }
+
+  const auth = getAuth();
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log("User is logged in:", user.email);
+      loadTeamData(user.uid);
+      showPage("home");
+    } else {
+      console.log("No user is logged in");
+      showPage("login");
+    }
+  });
+
+  async function loadTeamData(userId) {
+    try {
+      console.log("Loading team data for userId:", userId);
+      const q = query(collection(db, "users"), where("uid", "==", userId));
+      const querySnapshot = await getDocs(q);
+  
+      if (querySnapshot.empty) {
+        throw new Error("User data not found");
+      }
+  
+      // Assuming only one user with this uid
+      const userDoc = querySnapshot.docs[0];
+      console.log(userDoc.id, " => ", userDoc.data());
+  
+      const userData = userDoc.data();
+      const teamColor = userData.teamId || "";
+      localStorage.setItem("teamColor", teamColor);
+  
+    } catch (err) {
+      console.error("Failed to load team data:", err);
+    }
+  }
+  
+  
+
+qs("#submit-login").addEventListener("click", function (e) {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+    login(email, password);
+  });
+  
 
   function setupAfterLogin() {
     listenForNotifications();

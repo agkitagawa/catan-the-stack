@@ -37,6 +37,7 @@
         <li id="senior-see-hands-btn" class="hidden">Hands</li>
         <li id="senior-manage-cards-btn" class="hidden">Manage Cards</li>
       </ul>
+      <button id="logout-btn">Logout</button>
     </nav>
     <section id="message" class="hidden"></section>
   </header>
@@ -46,11 +47,11 @@
       <section>
         <h2>Log In</h2>
         <form id="login-form">
-          <label>Username:
-            <input id="username" type="text" size="15" required placeholder="Required" />
+          <label>Email:
+            <input type="email" id="loginEmail" placeholder="Email" required />
           </label>
           <label>Password:
-            <input id="password" type="password" size="15" required placeholder="Required" />
+            <input type="password" id="loginPassword" placeholder="Password" required />
           </label>
           <p id="missing-field-message" class="hidden"></p>
           <button id="submit-login" type="submit">Submit</button>
@@ -61,6 +62,7 @@
     <section id="home" class="hidden page">
       <section>
         <h2>Team Resources</h2>
+        <p id="leaderboard-last-updated"></p>
         <section id="team-resources">
           <section class="team-hand">
             <h3>Green</h3>
@@ -96,6 +98,7 @@
 
     <section id="personal-hand" class="hidden page">
       <h2>See Your Hand</h2>
+      <p id="personal-hand-last-updated"></p>
       <section id="your-hand">
         <h3>Development Cards</h3>
         <section id="dev-cards-in-hand"></section>
