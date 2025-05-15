@@ -97,6 +97,8 @@ async function login(event) {
       return;
     }
 
+    loggedIn = true;
+
     if (userData.role === seniorRole) {
       isSenior = true;
       seniorSetup();
@@ -155,7 +157,7 @@ async function populateTeamsDropdown() {
   
     teamsSnapshot.forEach(teamDoc => {
       const id = teamDoc.id;
-      if (id === teamColor) return; // Skip your own team
+      if (id === teamColor) return;
   
       const option = gen("option");
       option.value = id;
@@ -164,14 +166,37 @@ async function populateTeamsDropdown() {
     });
   }  
 
-function showPage(pageId) {
-  const pages = qsa(".page");
-  pages.forEach(page => page.classList.add("hidden"));
-  const page = qs(`#${pageId}`);
-  if (page) page.classList.remove("hidden");
-}
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!loggedIn) {
+      history.replaceState({ pageId: "login" }, "", "#login");
+      showPage("login", false);
+    } else {
+      if (!location.hash) {
+        history.replaceState({ pageId: "home" }, "", "#home");
+      }
+      showPage(location.hash.substring(1) || "home", false);
+    }
+  });
+  
+  window.addEventListener("popstate", (event) => {
+    const pageId = event.state?.pageId || location.hash.substring(1) || "login";
+    showPage(pageId, false);
+  });
+  
+  function showPage(pageId, pushState = true) {
+    const pages = document.querySelectorAll(".page");
+    pages.forEach(page => page.classList.add("hidden"));
+  
+    const page = document.querySelector(`#${pageId}`);
+    if (page) {
+      page.classList.remove("hidden");
+      if (pushState && location.hash.substring(1) !== pageId) {
+        history.pushState({ pageId }, "", `#${pageId}`);
+      }
+    }
+  }
 
-// Populate all teams resources in the home page
+
 async function getAllResources() {
   try {
     const teamsCol = collection(db, "teams");
@@ -245,7 +270,6 @@ async function getAllHands() {
     }
   }
 
-// Populate personal hand page with team data
 async function showPersonalHand() {
     if (!teamColor) {
       displayMessage("You must be logged in with a team to see your hand.");
@@ -271,24 +295,20 @@ async function showPersonalHand() {
         lumber: data.lumber || 0
       };      
   
-      // Update personal hand resource counts
       qs("#grain").textContent = `Grain: ${data.grain || 0}`;
       qs("#wool").textContent = `Wool: ${data.wool || 0}`;
       qs("#brick").textContent = `Brick: ${data.brick || 0}`;
       qs("#lumber").textContent = `Lumber: ${data.lumber || 0}`;
   
-      // Display development cards
       const devCardsSection = qs("#dev-cards-in-hand");
-        devCardsSection.innerHTML = ""; // Clear old cards
+        devCardsSection.innerHTML = "";
         if (data.development_cards && data.development_cards.length > 0) {
             data.development_cards.forEach(card => {
               const div = gen("div");
               div.classList.add("dev-card");
           
-              // Add description paragraph above button:
               const descP = gen("p");
               descP.classList.add("dev-card-description");
-              console.log("devCardDescriptions", devCardDescriptions);
               descP.textContent = devCardDescriptions[card] || "No description available.";
               div.appendChild(descP);
           
@@ -322,9 +342,7 @@ async function showPersonalHand() {
       displayMessage("Failed to load your hand.");
     }
   }
-  
 
-// Nav button handlers
 const seeHandBtn = qs("#see-hand-btn");
 if (seeHandBtn) {
   seeHandBtn.addEventListener("click", () => {
@@ -367,7 +385,7 @@ async function submitTradeRequest() {
         offer[resource] = isNaN(amt) ? 0 : amt;
         if ((fromData[resource] || 0) < offer[resource]) {
           displayMessage(`You don't have enough ${resource}.`);
-          return;  // This will exit submitTradeRequest now!
+          return;
         }
       
         const requestAmt = parseInt(qs(`#request-${resource}`).value, 10);
@@ -375,7 +393,7 @@ async function submitTradeRequest() {
       
         if ((toData[resource] || 0) < request[resource]) {
           displayMessage(`Team ${toTeam} doesn't have enough ${resource}.`);
-          return;  // Exit the function on failure
+          return;
         }
 
         if (offer[resource] > 0 && request[resource] > 0) {
@@ -388,14 +406,12 @@ async function submitTradeRequest() {
           for (const resource of dupResources) {
               message += `${resource}, `;
             }
-            message = message.slice(0, -2); // Remove trailing comma and space
+            message = message.slice(0, -2);
             message += ".";
         displayMessage(message);
         return;
       }
       
-  
-    // Validation: at least one offered and one requested resource > 0
     const hasOffer = Object.values(offer).some(amount => amount > 0);
     const hasRequest = Object.values(request).some(amount => amount > 0);
   
@@ -442,7 +458,6 @@ async function submitTradeRequest() {
       return;
     }
   
-    // Listen for trade requests where toTeam = current team & status = pending
     const q = query(
       tradeRequestsCol,
       where("toTeam", "==", teamColor),
@@ -450,7 +465,7 @@ async function submitTradeRequest() {
     );
   
     const tradeRequestsSection = qs("#trade-requests");
-    tradeRequestsSection.innerHTML = ""; // Clear initially
+    tradeRequestsSection.innerHTML = "";
   
     onSnapshot(q, (snapshot) => {
       tradeRequestsSection.innerHTML = "";
@@ -485,7 +500,6 @@ async function submitTradeRequest() {
         console.error("Error with onSnapshot listener:", error);
       });
   
-      // Add event listeners for accept/reject buttons
       qsa(".accept-trade").forEach(btn => {
         btn.onclick = () => handleTradeResponse(btn.dataset.id, true);
       });
@@ -515,7 +529,6 @@ async function submitTradeRequest() {
 
       await notifyTradeAccepted(trade.fromTeam, trade.toTeam);
   
-      // Select inputs from the correct trade request container
       const fromTeamRef = doc(db, "teams", trade.fromTeam);
       const toTeamRef = doc(db, "teams", trade.toTeam);
   
@@ -532,17 +545,14 @@ async function submitTradeRequest() {
       const fromData = fromTeamDoc.data();
       const toData = toTeamDoc.data();
   
-      // Perform trade
       const newFrom = { ...fromData };
       const newTo = { ...toData };
   
-      // From team sends
       for (const [res, amt] of Object.entries(trade.offer)) {
         newFrom[res] = (newFrom[res] || 0) - amt;
         newTo[res] = (newTo[res] || 0) + amt;
       }
-  
-      // To team sends (response offer)
+
       for (const [res, amt] of Object.entries(trade.request)) {
         newTo[res] = (newTo[res] || 0) - amt;
         newFrom[res] = (newFrom[res] || 0) + amt;
@@ -560,10 +570,6 @@ async function submitTradeRequest() {
     }
   }
   
-  
-  
-  // Notifications
-  
   function listenForNotifications() {
     if (!teamColor && !isSenior) {
       console.warn("listenForNotifications called but teamColor is empty and user is not senior");
@@ -574,7 +580,6 @@ async function submitTradeRequest() {
       teamColor = seniorRole;
     }
   
-    // Query with orderBy descending on 'createdAt' timestamp
     const q = query(
       notificationsCol,
       where("team", "==", teamColor),
@@ -598,14 +603,12 @@ async function submitTradeRequest() {
       notificationsBtn.classList.add("has-notification");
       notificationsBtn.textContent = `Notifications (${snapshot.size})`;
   
-      // Display notifications in descending order by createdAt
       const notificationPanel = qs("#notification-panel");
       if (notificationPanel) {
         notificationPanel.innerHTML = "";
         snapshot.forEach((docSnap) => {
           const note = docSnap.data();
   
-          // Format timestamp to readable string
           let timeString = "";
           if (note.timestamp) {
             let date;
@@ -621,9 +624,6 @@ async function submitTradeRequest() {
               timeString = window.formatRelativeTime(date, { addSuffix: true });
             }
           }
-          
-          console.log(timeString);
-          
   
           const p = gen("p");
           p.innerHTML = `${note.message || "New notification"}<br>${timeString}`;
@@ -633,7 +633,6 @@ async function submitTradeRequest() {
     });
   }
   
-
   function listenForDevCardUpdates() {
     if (!teamColor) return;
   
@@ -665,14 +664,13 @@ async function submitTradeRequest() {
   
       const data = teamSnap.data();
       const cards = data.development_cards || [];
-      console.log(cards);
   
       const index = cards.indexOf(cardType);
       if (index < 0) {
         return displayMessage("Card not found.");
       }
   
-      const usedCard = cards.splice(index, 1); // Remove card
+      const usedCard = cards.splice(index, 1);
   
       await updateDoc(teamRef, { development_cards: cards });
       displayMessage(`Success!`);
@@ -700,10 +698,8 @@ async function submitTradeRequest() {
       const data = teamSnap.data();
       const currentAmount = data[resourceType] || 0;
   
-      // Add amount to current amount
       const newAmount = currentAmount + amount;
   
-      // Update Firestore
       await updateDoc(teamRef, {
         [resourceType]: newAmount
       });
@@ -737,10 +733,8 @@ async function submitTradeRequest() {
       const data = teamSnap.data();
       const currentCards = data["development_cards"];
   
-      // Add new card to array
       currentCards.push(cardType);
   
-      // Update Firestore
       await updateDoc(teamRef, {
         ["development_cards"]: currentCards
       });
@@ -772,10 +766,8 @@ async function submitTradeRequest() {
         return;
       }
   
-      // Subtract amount from current amount
       const newAmount = currentAmount - amount;
   
-      // Update Firestore
       await updateDoc(teamRef, {
         [resourceType]: newAmount
       });
@@ -809,9 +801,8 @@ async function submitTradeRequest() {
         return;
       }
   
-      const removedCard = currentCards.splice(index, 1); // Remove card
+      const removedCard = currentCards.splice(index, 1);
   
-      // Update Firestore
       await updateDoc(teamRef, {
         ["development_cards"]: currentCards
       });
@@ -876,7 +867,6 @@ async function submitTradeRequest() {
   
     const stolen = availableResources[Math.floor(Math.random() * availableResources.length)];
   
-    // Update teams
     const robberTeamRef = doc(db, "teams", teamColor);
     const [robberDoc] = await Promise.all([getDoc(robberTeamRef)]);
     const robberData = robberDoc.data();
@@ -898,11 +888,9 @@ async function submitTradeRequest() {
   
   
   async function useChoose2Resources() {
-    // Get selected resource values from the selects
     const resource1 = qs("#choose-2-resource1").value;
     const resource2 = qs("#choose-2-resource2").value;
   
-    // Add the two resources to the player's inventory
     await assignResourceCard(teamColor, resource1, 1);
     await assignResourceCard(teamColor, resource2, 1);
     
@@ -920,9 +908,6 @@ async function submitTradeRequest() {
     });
   }
   
-  // Initialization
-  
-  // Hook buttons
   const homeBtn = qs("#home-btn");
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
@@ -1074,7 +1059,7 @@ if (manageTradesBtn) {
       
         teamsSnapshot.forEach(teamDoc => {
           const id = teamDoc.id;
-          if (id === teamColor) return; // exclude own team
+          if (id === teamColor) return;
       
           const option = gen("option");
           option.value = id;
@@ -1164,7 +1149,6 @@ if (manageTradesBtn) {
     removeDevCardSelect.addEventListener("change", updateRemoveDevCardButtonState);
   }
 
-  // Choose 2 Resources card button enablement
   const res1 = qs("#choose-2-resource1");
   const res2 = qs("#choose-2-resource2");
   const choose2Btn = qs("#submit-choose-2-request");
@@ -1204,9 +1188,7 @@ if (manageTradesBtn) {
     });
   }
 
-  // On login or setup:
   function setupAfterLogin() {
     listenForNotifications();
-    loggedIn = true;
   }
   
