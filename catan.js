@@ -68,7 +68,7 @@ function displayMessage(msg) {
   if (!el) return;
   el.textContent = msg;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 3000);
+  setTimeout(() => el.classList.add("hidden"), 5000);
 }
 
 async function login(event) {
@@ -152,7 +152,7 @@ async function populateTeamsDropdown() {
     const select = qs("#team-to-request-from");
     if (!select) return;
   
-    select.innerHTML = '<option value="">Select a team</option>';
+    select.innerHTML = '<option value="" disabled selected>Select a team</option>';
   
     teamsSnapshot.forEach(teamDoc => {
       const id = teamDoc.id;
@@ -412,6 +412,10 @@ async function submitTradeRequest() {
   
     if (!hasOffer || !hasRequest) {
       displayMessage("You must offer and request at least one resource.");
+      const toTeamSelect = qs("#team-to-request-from");
+      toTeamSelect.value = "";
+      const requestTradeBtn = qs("#submit-trade-request");
+      requestTradeBtn.disabled = true;
       return;
     }
   
@@ -975,7 +979,7 @@ async function submitTradeRequest() {
       if (randomNumber < 0.6) {
         card = "Robber";
       } else if (randomNumber < 0.75) {
-        card = "Victory Point";
+        card = "Point";
       } else {
         card = "Choose 2 Resources";
       }
@@ -1018,7 +1022,11 @@ async function submitTradeRequest() {
 
   const submitTradeBtn = qs("#submit-trade-request");
   if (submitTradeBtn) {
-    submitTradeBtn.addEventListener("click", submitTradeRequest);
+    submitTradeBtn.addEventListener("click", () => {
+      submitTradeRequest()
+      const toTeamSelect = qs("#team-to-request-from");
+      toTeamSelect.value = "";
+    });
   }
   
   const notificationsBtn = qs("#notifications-btn");
@@ -1041,6 +1049,7 @@ if (manageTradesBtn) {
         useRobber();
         const robberSelect = qs("#robber-target-team");
         robberSelect.value = "";
+        submitRobberRequestBtn.disabled = true;
       });
     }
     
@@ -1052,6 +1061,7 @@ if (manageTradesBtn) {
         const res2 = qs("#choose-2-resource2");
         res1.value = "";
         res2.value = "";
+        submitChoose2RequestBtn.disabled = true;
       });
     }
 
@@ -1215,6 +1225,19 @@ function listenForTeamChanges() {
   if (res1 && res2 && choose2Btn) {
     res1.addEventListener("change", updateChoose2ButtonState);
     res2.addEventListener("change", updateChoose2ButtonState);
+  }
+
+
+  const requestFrom = qs("#team-to-request-from");
+  const requestTradeBtn = qs("#submit-trade-request");
+
+  function updateRequestTradeButtonState() {
+    const val1 = requestFrom.value;
+    requestTradeBtn.disabled = !val1;
+  }
+
+  if (requestFrom && requestTradeBtn) {
+    requestFrom.addEventListener("change", updateRequestTradeButtonState);
   }
 
   function resetSeniorFormButtons() {
