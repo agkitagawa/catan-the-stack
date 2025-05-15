@@ -1,0 +1,34 @@
+# Node modules and local dependencies
+node_modules/
+
+# Firebase cache & emulators
+.firebase/
+.firebaserc
+
+# Build output (if you have one)
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS system files
+.DS_Store
+
+# VSCode and other IDE settings
+.vscode/
+.idea/
+
+# Env files (if you use API keys locally)
+.env
+.env.*
+
+# Local functions (only if you're not pushing cloud functions)
+functions/node_modules/
+functions/.env
+
+# Firebase hosting cache
+firebase-debug.log
+

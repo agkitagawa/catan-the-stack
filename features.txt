@@ -1,0 +1,22 @@
+Resources: grain, wool, brick, and lumber
+Teams: green, red, blue, white
+
+Development cards - lets you do something unilaterally
+
+Teams can see resource counts of all other teams
+
+Admin assigns resources + quantity of development cards
+Minigames: 
+Winning a mini game gets one dev card
+when admin add dev card, selects from pool at random
+four mini games - each gives a random one of the four w/ a probability of any gives advantage
+Robber (0.6), Victory Point (0.15), choose 2 resources (0.25)
+Robber can steal one random resource from a team of their choice
+Point adds one point
+Choose 2 resources - get one of each of two resources you get to choose (can choose same resource twice)
+Teams don't know what dev cards other teams hold
+Resources only transfer into points at the end of the day
+
+Teams have username and password
+User = color
+Pass = idk something easy

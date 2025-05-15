@@ -1,0 +1,40 @@
+/*
+ * Catan: The Stack
+ * Ditch Day 2025
+ */
+
+ .hidden {
+    display: none;
+}
+
+button.disabled {
+    background-color: gray;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  /* #message {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+  }
+   */
+  .close-message-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+  
