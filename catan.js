@@ -138,7 +138,6 @@ function teamSetup(team) {
 
   populateTeamsDropdown();
   listenForIncomingTrades();
-  listenForTeamChanges();
   populateRobberTargetDropdown();
   loadDevCardDescriptions();
 
@@ -711,15 +710,15 @@ async function submitTradeRequest() {
   
       let message = ""
       if (amount > 1) {
-        message = `You have received ${amount} ${resourceType} cards!`;
+        message = `You received ${amount} ${resourceType} cards!`;
       } else {
-        message = `You have received ${amount} ${resourceType} card!`;
+        message = `You received ${amount} ${resourceType} card!`;
       }
       if (isSenior) {
         displayMessage("Success");
       }
       await addNotification(teamId, message);
-      await addNotification(seniorRole, `${amount} ${resourceType} card(s) awarded to ${teamId}`);
+      await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to ${teamId}`);
     } catch (err) {
       console.error("Error assigning resource card:", err);
     }
@@ -748,8 +747,8 @@ async function submitTradeRequest() {
       if (isSenior) {
         displayMessage("Success");
       }
-      await addNotification(teamId, `You were awarded a "${cardType}" development card`);
-      await addNotification(seniorRole, `"${cardType}" development card awarded to Team ${teamId}`);
+      await addNotification(teamId, `You received a "${cardType}" development card`);
+      await addNotification(seniorRole, `"${cardType}" development card given to Team ${teamId}`);
     } catch (err) {
       console.error("Error assigning development card:", err);
     }
@@ -1084,52 +1083,6 @@ if (manageTradesBtn) {
         });
       }
       
-      let previousTeamData = null;
-
-function listenForTeamChanges() {
-  if (!teamColor) {
-    console.warn("listenForTeamChanges called but teamColor is empty");
-    return;
-  }
-
-  const teamRef = doc(db, "teams", teamColor);
-  
-  onSnapshot(teamRef, async (docSnap) => {
-    if (!docSnap.exists()) return;
-    const newData = docSnap.data();
-
-    if (previousTeamData) {
-      // Check resource changes
-      const resources = ["grain", "wool", "brick", "lumber"];
-      for (const res of resources) {
-        const oldAmt = previousTeamData[res] || 0;
-        const newAmt = newData[res] || 0;
-
-        console.log(oldAmt, newAmt);
-        console.log(res);
-        console.log(`${res.charAt(0).toUpperCase() + res.slice(1)} awarded: +${newAmt - oldAmt}`);
-
-        if (newAmt > oldAmt) {
-          // Resource awarded
-          await addNotification(teamColor, `You were awarded ${newAmt - oldAmt} ${res}`);
-          await addNotification(seniorRole, `${newAmt - oldAmt} ${res} awarded to Team ${teamColor}`);
-        }
-      }
-
-      // Check development cards changes
-      const oldCards = previousTeamData.development_cards || [];
-      const newCards = newData.development_cards || [];
-
-      // Cards added
-      if (newCards.length > oldCards.length) {
-      }
-    }
-
-    previousTeamData = newData;  // Update cache
-  });
-}
-
-
 
   const robberSelect = qs("#robber-target-team");
   const robberBtn = qs("#submit-robber-request");
