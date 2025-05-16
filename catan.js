@@ -1301,7 +1301,6 @@ if (manageTradesBtn) {
         throw new Error("User data not found");
       }
   
-      // Assuming only one user with this uid
       const userDoc = querySnapshot.docs[0];
       console.log(userDoc.id, " => ", userDoc.data());
   
