@@ -1119,6 +1119,10 @@ if (logoutBtn) {
   const notificationsBtn = qs("#notifications-btn");
   if (notificationsBtn) {
     notificationsBtn.addEventListener("click", () => {
+        const notificationsTimestamp = qs("#notifications-last-updated");
+        if (notificationsTimestamp) {
+            notificationsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
       showPage("notifications");
     });
   }
@@ -1126,6 +1130,10 @@ if (logoutBtn) {
   const manageTradesBtn = qs("#manage-trades-btn");
 if (manageTradesBtn) {
   manageTradesBtn.addEventListener("click", () => {
+    const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
+    if (tradeRequestsTimestamp) {
+        tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    }
     showPage("manage-trades");
   });
 }
