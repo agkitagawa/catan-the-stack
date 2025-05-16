@@ -1,4 +1,5 @@
 /*
+ * Author: Anna Kitagawa
  * Catan: The Stack
  * Ditch Day 2025
  */
@@ -39,3 +40,113 @@ button.disabled {
     line-height: 1;
   }
   
+
+.notifications-container {
+    width: 100%;
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 15px;
+  }
+  
+  .notification-header {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    background-color: #f0f0f0;
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .notification-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .notification-row:last-child {
+    border-bottom: none;
+  }
+  
+  .notification-row:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .notification-message {
+    padding-right: 10px;
+  }
+  
+  .notification-time {
+    color: #666;
+    font-size: 0.9em;
+    text-align: right;
+  }
+  
+  /* Add hover effect */
+  .notification-row:hover {
+    background-color: #f0f0f0;
+  }
+
+  #clear-all-notifications-btn {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+  }
+  
+  #clear-all-notifications-btn:hover {
+    background-color: #d32f2f;
+  }
+  
+  /* Add styles for individual delete buttons */
+  .notification-delete {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 0.8em;
+    margin-left: 10px;
+    transition: color 0.3s;
+  }
+  
+  .notification-delete:hover {
+    color: #f44336;
+  }
+  
+  /* Update notification row to accommodate delete button */
+  .notification-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr auto;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  /* Update header row to match */
+  .notification-header {
+    display: grid;
+    grid-template-columns: 3fr 1fr auto;
+    background-color: #f0f0f0;
+    padding: 10px;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  /* Media query update */
+  @media (max-width: 600px) {
+    .notification-header, .notification-row {
+      grid-template-columns: 2fr 1fr auto;
+    }
+    
+    #clear-all-notifications-btn {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+  }

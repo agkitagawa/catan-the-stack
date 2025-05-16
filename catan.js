@@ -18,7 +18,8 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
@@ -42,14 +43,44 @@ let teamResources = {};
 let isSenior = false;
 let authCheckComplete = false;
 
+let initialHash = "";
+
+window.addEventListener("DOMContentLoaded", function() {
+  initialHash = location.hash.substring(1);
+  
+  if (initialHash && initialHash !== "login" && initialHash !== "loading") {
+    sessionStorage.setItem("initialHash", initialHash);
+  }
+});
+
 const auth = getAuth();
 
-showPage("loading", false);
-setupNavigationGuards();
+window.addEventListener("hashchange", function() {
+  if (auth.currentUser || localStorage.getItem("loggedIn") === "true") {
+    const currentPage = location.hash.substring(1);
+    if (currentPage && currentPage !== "login" && currentPage !== "loading") {
+      
+      localStorage.setItem("currentPage", currentPage);
+    }
+  }
+});
 
-onAuthStateChanged(auth, (user) => {
-    authCheckComplete = true;
+window.addEventListener("load", function() {
+    const isLoggedIn = auth.currentUser || localStorage.getItem("loggedIn") === "true";
+    const currentHash = location.hash.substring(1);
+    const savedPage = localStorage.getItem("currentPage");
     
+    if (isLoggedIn) {
+      if ((!currentHash || currentHash === "home") && savedPage) {
+        
+        localStorage.setItem("pageToRestore", savedPage);
+      }
+    }
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    authCheckComplete = true;
+  
     if (user) {
       console.log("User is logged in:", user.email);
       localStorage.setItem("loggedIn", "true");
@@ -70,11 +101,34 @@ onAuthStateChanged(auth, (user) => {
           getAllResources();
         }
         
-        if (!location.hash) {
-          history.replaceState({ pageId: "home" }, "", "#home");
-        }
+        const storedInitialHash = sessionStorage.getItem("initialHash");
         
-        showPage(location.hash.substring(1) || "home", false);
+        
+        const currentHash = location.hash.substring(1);
+        
+        
+        if (storedInitialHash && storedInitialHash !== "login" && storedInitialHash !== "loading") {
+          
+          showPage(storedInitialHash, false);
+          history.replaceState({ pageId: storedInitialHash }, "", `#${storedInitialHash}`);
+          sessionStorage.removeItem("initialHash");
+        }
+        else if (currentHash && currentHash !== "login" && currentHash !== "loading") {
+          
+          showPage(currentHash, false);
+        } 
+        else {
+          const savedPage = localStorage.getItem("currentPage");
+          if (savedPage && savedPage !== "login" && savedPage !== "loading") {
+            
+            showPage(savedPage, false);
+            history.replaceState({ pageId: savedPage }, "", `#${savedPage}`);
+          } else {
+            console.log("No saved page, defaulting to home");
+            showPage("home", false);
+            history.replaceState({ pageId: "home" }, "", "#home");
+          }
+        }
       }).catch(err => {
         console.error("Error loading team data:", err);
         displayMessage("Error loading user data");
@@ -83,6 +137,7 @@ onAuthStateChanged(auth, (user) => {
     } else {
       console.log("No user is logged in");
       localStorage.removeItem("loggedIn");
+      sessionStorage.removeItem("initialHash");
       teamColor = "";
       isSenior = false;
       teamResources = {};
@@ -92,45 +147,291 @@ onAuthStateChanged(auth, (user) => {
     }
   });
 
+function setupNavigationGuards() {
+    window.addEventListener("hashchange", () => {
+        const user = auth.currentUser;
+        const isLoggedInFromStorage = localStorage.getItem("loggedIn") === "true";
+        
+        if (!user && !isLoggedInFromStorage && location.hash !== "#login") {
+            history.replaceState({ pageId: "login" }, "", "#login");
+            showPage("login", false);
+        }
+    });
+}
+
+
+function showPage(pageId, pushState = true) {
+    if (pageId === "loading") {
+      const pages = document.querySelectorAll(".page");
+      pages.forEach(page => page.classList.add("hidden"));
+      
+      const loadingPage = document.querySelector("#loading");
+      if (loadingPage) {
+        loadingPage.classList.remove("hidden");
+      }
+      
+      const nav = qs("nav");
+      if (nav) nav.classList.add("hidden");
+      
+      return;
+    }
+    
+    const user = auth.currentUser;
+    const isLoggedInFromStorage = localStorage.getItem("loggedIn") === "true";
+    
+    if (!user && !isLoggedInFromStorage && pageId !== "login" && authCheckComplete) {
+      pageId = "login";
+      history.replaceState({ pageId }, "", `#${pageId}`);
+    }
+    
+    const pages = document.querySelectorAll(".page");
+    pages.forEach(page => page.classList.add("hidden"));
+  
+    const nav = qs("nav");
+    if (pageId === "login") {
+      if (nav) nav.classList.add("hidden");
+    } else {
+      if (nav) nav.classList.remove("hidden");
+    }
+    
+    const page = document.querySelector(`#${pageId}`);
+    if (page) {
+      page.classList.remove("hidden");
+      
+      if (pushState && location.hash.substring(1) !== pageId) {
+        history.pushState({ pageId }, "", `#${pageId}`);
+      }
+
+      if (pageId !== "login" && pageId !== "loading") {
+        localStorage.setItem("currentPage", pageId);
+      }
+
+      populatePageContent(pageId);
+    }
+}
+
+function populatePageContent(pageId) {
+    
+    
+    switch(pageId) {
+        case "home":
+            getAllResources();
+            const leaderboardTimestamp = qs("#leaderboard-last-updated");
+            if (leaderboardTimestamp) {
+                leaderboardTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            }
+            break;
+            
+        case "personal-hand":
+            showPersonalHand();
+            break;
+            
+        case "notifications":
+            const notificationPanel = qs("#notification-panel");
+            if (notificationPanel) {
+                notificationPanel.innerHTML = "<p>Loading notifications...</p>";
+            }
+            
+            const notificationsTimestamp = qs("#notifications-last-updated");
+            if (notificationsTimestamp) {
+                notificationsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            }
+            
+            addClearAllButton();
+
+            (async () => {
+                try {
+                    const q = query(
+                        notificationsCol,
+                        where("team", "==", teamColor),
+                        orderBy("timestamp", "desc")
+                    );
+                    
+                    const snapshot = await getDocs(q);
+                    
+                    if (snapshot.empty) {
+                        if (notificationPanel) {
+                            notificationPanel.innerHTML = "<p>No notifications.</p>";
+                        }
+                        return;
+                    }
+                    
+                    const notifications = [];
+                    snapshot.forEach((docSnap) => {
+                        notifications.push({
+                            id: docSnap.id,
+                            ...docSnap.data()
+                        });
+                    });
+                    
+                    renderNotifications(notificationPanel, notifications);
+                    
+                } catch (error) {
+                    console.error("Error fetching notifications:", error);
+                    if (notificationPanel) {
+                        notificationPanel.innerHTML = "<p>Error loading notifications. Please try again later.</p>";
+                    }
+                    displayMessage("Error loading notifications");
+                }
+            })();
+            break;
+            
+        case "manage-trades":
+            const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
+            if (tradeRequestsTimestamp) {
+                tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            }
+
+            listenForIncomingTrades();
+            break;
+            
+        case "senior-see-hands":
+            getAllHands();
+            break;
+
+        case "use-robber":
+            populateRobberTargetDropdown();
+            break;
+
+        default:
+            break;
+    }
+}
+
+showPage("loading", false);
+setupNavigationGuards();
+
+onAuthStateChanged(auth, (user) => {
+  authCheckComplete = true;
+
+  if (user) {
+    console.log("User is logged in:", user.email);
+    localStorage.setItem("loggedIn", "true");
+    
+    showPage("loading", false);
+    
+    loadTeamData(user.uid).then(() => {
+      teamColor = localStorage.getItem("teamColor") || "";
+      isSenior = localStorage.getItem("isSenior") === "true";
+      
+      if (isSenior) {
+        seniorSetup();
+        setupAfterLogin();
+        getAllResources();
+      } else {
+        teamSetup();
+        setupAfterLogin();
+        getAllResources();
+      }
+      
+      const currentHash = location.hash.substring(1);
+      
+      if (currentHash && currentHash !== "login" && currentHash !== "loading") {
+        
+        showPage(currentHash, false);
+      } 
+      else {
+        const savedPage = localStorage.getItem("currentPage");
+        if (savedPage && savedPage !== "login" && savedPage !== "loading") {
+          
+          showPage(savedPage, false);
+          history.replaceState({ pageId: savedPage }, "", `#${savedPage}`);
+        } else {
+          console.log("No saved page, defaulting to home");
+          showPage("home", false);
+          history.replaceState({ pageId: "home" }, "", "#home");
+        }
+      }
+    }).catch(err => {
+      console.error("Error loading team data:", err);
+      displayMessage("Error loading user data");
+      showPage("login", false);
+    });
+  } else {
+    console.log("No user is logged in");
+    localStorage.removeItem("loggedIn");
+    teamColor = "";
+    isSenior = false;
+    teamResources = {};
+    
+    showPage("login", false);
+    history.replaceState({ pageId: "login" }, "", "#login");
+  }
+});
+
 const tradeRequestsCol = collection(db, "trade_requests");
 const notificationsCol = collection(db, "notifications");
+const recentNotifications = new Map();
 
 async function addNotification(team, message) {
     if (typeof message !== "string" || !message.trim()) {
       console.error("Invalid notification message:", message);
       return;
     }
+    
+    const notificationKey = `${team}-${message}`;
+    
+    const now = Date.now();
+    if (recentNotifications.has(notificationKey)) {
+      const lastTime = recentNotifications.get(notificationKey);
+      if (now - lastTime < 3000) {
+        
+        return;
+      }
+    }
+    
+    recentNotifications.set(notificationKey, now);
+    
+    for (const [key, timestamp] of recentNotifications.entries()) {
+      if (now - timestamp > 10000) {
+        recentNotifications.delete(key);
+      }
+    }
+    
     try {
       await addDoc(notificationsCol, {
         team,
         message,
-        timestamp: Date.now(),
+        timestamp: now,
       });
-      if (!isSenior) {
-        displayMessage("New Notification");
-      }
     } catch (err) {
       console.error("Failed to add notification:", err);
     }
-  }
-  
-
-function displayMessage(msg) {
-  const el = qs("#message");
-  if (!el) return;
-  const text = gen("p");
-  text.textContent = msg;
-  const closeBtn = gen("button");
-  closeBtn.classList.add("close-message-btn");
-  closeBtn.textContent = "X";
-  closeBtn.onclick = () => el.classList.add("hidden");
-  el.appendChild(text);
-  el.appendChild(closeBtn);
-  el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 5000);
 }
   
-async function login() {
+
+  function displayMessage(msg) {
+    const el = qs("#message");
+    if (!el) return;
+    
+    el.innerHTML = "";
+    
+    const text = gen("p");
+    text.textContent = msg;
+    
+    const closeBtn = gen("button");
+    closeBtn.classList.add("close-message-btn");
+    closeBtn.textContent = "X";
+    closeBtn.onclick = () => {
+      el.classList.add("hidden");
+      el.innerHTML = ""; 
+    };
+    
+    
+    el.appendChild(text);
+    el.appendChild(closeBtn);
+    
+    
+    el.classList.remove("hidden");
+    
+    
+    setTimeout(() => {
+      el.classList.add("hidden");
+      el.innerHTML = ""; 
+    }, 7000);
+  }
+  
+  async function login() {
     const email = qs("#loginEmail").value.trim();
     const password = qs("#loginPassword").value.trim();
   
@@ -140,6 +441,12 @@ async function login() {
   
     try {
         await signInWithEmailAndPassword(auth, email, password);
+        
+        
+        localStorage.setItem("currentPage", "home");
+        
+        sessionStorage.removeItem("initialHash");
+        
         displayMessage("Login successful!");
     
     } catch (err) {
@@ -190,50 +497,133 @@ function enforceAuthCheck(event) {
         if (event) event.preventDefault();
     }
 }
-
-function setupNavigationGuards() {
-    window.addEventListener("load", () => {
-        const user = auth.currentUser;
-        if (!user && location.hash !== "#login") {
-            history.replaceState(null, "", "#login");
-            showPage("login", false);
-        }
-    });
-    
-    window.addEventListener("hashchange", () => {
-        const user = auth.currentUser;
-        if (!user && location.hash !== "#login") {
-            history.replaceState(null, "", "#login");
-            showPage("login", false);
-        }
-    });
-}
   
-
 function seniorSetup() {
-  const nav = qs("nav");
-  if (nav) nav.classList.remove("hidden");
-  for (const li of qsa("nav li")) {
-    li.classList.toggle("hidden");
+    const nav = qs("nav");
+    if (nav) nav.classList.remove("hidden");
+    
+    
+    
+    const seeHandBtn = qs("#see-hand-btn");
+    if (seeHandBtn) seeHandBtn.classList.add("hidden");
+    
+    const manageTradesBtn = qs("#manage-trades-btn");
+    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
+    
+    
+    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
+    
+    const seniorManageCardsBtn = qs("#senior-manage-cards-btn");
+    if (seniorManageCardsBtn) seniorManageCardsBtn.classList.remove("hidden");
+    
+    
+    const notificationsBtn = qs("#notifications-btn");
+    if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+    
+    getAllHands();
+}
+
+async function deleteNotification(notificationId) {
+    try {
+      const notificationRef = doc(db, "notifications", notificationId);
+      await deleteDoc(notificationRef);
+      displayMessage("Notification deleted");
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      displayMessage("Error deleting notification");
+    }
   }
 
-  const notificationsBtn = qs("#notifications-btn");
-  if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+  async function clearAllNotifications() {
+    try {
+      if (!teamColor) {
+        displayMessage("You must be logged in to clear notifications.");
+        return;
+      }
 
-  getAllHands();
-  showPage("home");
-}
+      const q = query(
+        notificationsCol,
+        where("team", "==", teamColor)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        displayMessage("No notifications to clear.");
+        return;
+      }
 
-function teamSetup() {
-  const nav = qs("nav");
-  if (nav) nav.classList.remove("hidden");
+      const batch = writeBatch(db);
+      snapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      displayMessage("All notifications cleared");
 
-  populateTeamsDropdown();
-  listenForIncomingTrades();
-  populateRobberTargetDropdown();
-  loadDevCardDescriptions();
+      const notificationPanel = qs("#notification-panel");
+      if (notificationPanel) {
+        notificationPanel.innerHTML = "<p>No notifications.</p>";
+      }
 
-  showPage("home");
+      const notificationsBtn = qs("#notifications-btn");
+      if (notificationsBtn) {
+        notificationsBtn.classList.remove("has-notification");
+        notificationsBtn.textContent = "Notifications";
+      }
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+      displayMessage("Error clearing notifications");
+    }
+  }
+
+  function addClearAllButton() {
+    const notificationsPage = qs("#notifications");
+    if (!notificationsPage) return;
+
+    if (qs("#clear-all-notifications-btn")) return;
+    
+    const clearAllBtn = gen("button");
+    clearAllBtn.id = "clear-all-notifications-btn";
+    clearAllBtn.textContent = "Clear All Notifications";
+    clearAllBtn.classList.add("clear-all-btn");
+    clearAllBtn.addEventListener("click", clearAllNotifications);
+
+    const timestampEl = qs("#notifications-last-updated");
+    if (timestampEl && timestampEl.parentNode) {
+      timestampEl.parentNode.insertBefore(clearAllBtn, timestampEl.nextSibling);
+    } else {
+      notificationsPage.querySelector("h2").appendChild(clearAllBtn);
+    }
+  }
+
+  function teamSetup() {
+    const nav = qs("nav");
+    if (nav) nav.classList.remove("hidden");
+    
+    
+    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
+    
+    const seniorManageCardsBtn = qs("#senior-manage-cards-btn");
+    if (seniorManageCardsBtn) seniorManageCardsBtn.classList.add("hidden");
+    
+    
+    const seeHandBtn = qs("#see-hand-btn");
+    if (seeHandBtn) seeHandBtn.classList.remove("hidden");
+    
+    const manageTradesBtn = qs("#manage-trades-btn");
+    if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
+    
+    
+    const notificationsBtn = qs("#notifications-btn");
+    if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+    
+    populateTeamsDropdown();
+    listenForIncomingTrades();
+    populateRobberTargetDropdown();
+    loadDevCardDescriptions();
 }
 
 async function populateTeamsDropdown() {
@@ -267,133 +657,224 @@ async function populateTeamsDropdown() {
     const pageId = event.state?.pageId || location.hash.substring(1) || "login";
     showPage(pageId, false);
   });
+
+  async function calculatePoints() {
+    try {
+      const teamsCol = collection(db, "teams");
+      const teamsSnapshot = await getDocs(teamsCol);
   
-  function showPage(pageId, pushState = true) {
-    if (pageId === "loading") {
-      const pages = document.querySelectorAll(".page");
-      pages.forEach(page => page.classList.add("hidden"));
-      
-      const loadingPage = document.querySelector("#loading");
-      if (loadingPage) {
-        loadingPage.classList.remove("hidden");
+      if (teamsSnapshot.empty) {
+        displayMessage("No teams found.");
+        return [];
       }
-      
-      const nav = qs("nav");
-      if (nav) nav.classList.add("hidden");
-      
-      return;
-    }
-    
-    const user = auth.currentUser;
-    const isLoggedInFromStorage = localStorage.getItem("teamColor") !== null;
-    
-    if (!user && !isLoggedInFromStorage && pageId !== "login" && authCheckComplete) {
-      pageId = "login";
-      history.replaceState({ pageId }, "", `#${pageId}`);
-    }
-    
-    const pages = document.querySelectorAll(".page");
-    pages.forEach(page => page.classList.add("hidden"));
   
-    const nav = qs("nav");
-    if (pageId === "login") {
-      if (nav) nav.classList.add("hidden");
-    } else {
-      if (nav) nav.classList.remove("hidden");
-    }
-    
-    const page = document.querySelector(`#${pageId}`);
-    if (page) {
-      page.classList.remove("hidden");
-      if (pushState && location.hash.substring(1) !== pageId) {
-        history.pushState({ pageId }, "", `#${pageId}`);
-      }
+      const teamsWithPoints = [];
+  
+      teamsSnapshot.forEach(teamDoc => {
+        const teamId = teamDoc.id.toLowerCase();
+        const data = teamDoc.data();
+  
+        
+        const resources = [
+          data.grain || 0,
+          data.wool || 0,
+          data.brick || 0,
+          data.lumber || 0
+        ];
+  
+        const points = Math.min(...resources);
+  
+        teamsWithPoints.push({
+          id: teamId,
+          points: points,
+          resources: {
+            grain: data.grain || 0,
+            wool: data.wool || 0,
+            brick: data.brick || 0,
+            lumber: data.lumber || 0
+          },
+          development_cards: data.development_cards || []
+        });
+      });
+  
+      
+      teamsWithPoints.sort((a, b) => b.points - a.points);
+      
+      return teamsWithPoints;
+    } catch (err) {
+      console.error("Error calculating points:", err);
+      displayMessage("Failed to calculate team points.");
+      return [];
     }
   }
-
+  
+  
   async function getAllResources() {
     try {
-      const teamsCol = collection(db, "teams");
-      const teamsSnapshot = await getDocs(teamsCol);
-  
-      if (teamsSnapshot.empty) {
+      const teamsWithPoints = await calculatePoints();
+      
+      if (teamsWithPoints.length === 0) {
         displayMessage("No teams found.");
-        return;
+        return false;
       }
   
-      teamsSnapshot.forEach(teamDoc => {
-        const teamId = teamDoc.id.toLowerCase();
-        const data = teamDoc.data();
-  
+      
+      const leaderboardContainer = qs("#team-resources");
+      
+      
+      leaderboardContainer.innerHTML = "";
+      
+      
+      teamsWithPoints.forEach(team => {
+        const teamSection = gen("section");
+        teamSection.classList.add("team-hand");
+        
+        const teamHeader = gen("h3");
+        
+        const teamName = team.id.charAt(0).toUpperCase() + team.id.slice(1);
+        teamHeader.textContent = `${teamName} (${team.points} Points)`;
+        
         const resources = ["grain", "wool", "brick", "lumber"];
-  
+        
+        teamSection.appendChild(teamHeader);
+        
         resources.forEach(resource => {
-          const elId = `${teamId}-${resource}`;
-          const el = qs(`#${elId}`);
-          if (el) {
-            el.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${data[resource] || 0}`;
-          }
+          const p = gen("p");
+          p.id = `${team.id}-${resource}`;
+          p.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${team.resources[resource]}`;
+          teamSection.appendChild(p);
         });
+        
+        leaderboardContainer.appendChild(teamSection);
       });
       
-      return true; 
+      return true;
     } catch (err) {
       console.error("Error loading teams resources:", err);
       displayMessage("Failed to load teams resources.");
-      throw err; 
+      throw err;
     }
   }
 
-async function getAllHands() {
+  async function getAllHands() {
     try {
-      const teamsCol = collection(db, "teams");
-      const teamsSnapshot = await getDocs(teamsCol);
+      const teamsWithPoints = await calculatePoints();
   
-      if (teamsSnapshot.empty) {
+      if (teamsWithPoints.length === 0) {
         displayMessage("No teams found.");
         return;
       }
   
-      teamsSnapshot.forEach(teamDoc => {
-        const teamId = teamDoc.id.toLowerCase();
-        const data = teamDoc.data();
-  
+      
+      const seniorHandsContainer = qs("#senior-team-hands");
+      seniorHandsContainer.innerHTML = "";
+      
+      
+      teamsWithPoints.forEach(team => {
+        const teamId = team.id.toLowerCase();
+        const teamSection = gen("section");
+        teamSection.classList.add("senior-team-hand");
+        
+        const teamHeader = gen("h3");
+        const teamName = teamId.charAt(0).toUpperCase() + teamId.slice(1);
+        teamHeader.textContent = `${teamName} (${team.points} Points)`;
+        teamSection.appendChild(teamHeader);
+        
+        
+        const pointsDetails = gen("p");
+        pointsDetails.classList.add("points-details");
+        teamSection.appendChild(pointsDetails);
+        
+        
+        const devCardsHeader = gen("h4");
+        devCardsHeader.textContent = "Development Cards";
+        teamSection.appendChild(devCardsHeader);
+        
+        const devCardsSection = gen("section");
+        devCardsSection.id = `senior-${teamId}-dev-cards`;
+        teamSection.appendChild(devCardsSection);
+        
+        
+        const resourcesHeader = gen("h4");
+        resourcesHeader.textContent = "Resources";
+        teamSection.appendChild(resourcesHeader);
+        
+        
         const resources = ["grain", "wool", "brick", "lumber"];
-  
         resources.forEach(resource => {
-          const elId = `senior-${teamId}-${resource}`;
-          const el = qs(`#${elId}`);
-          if (el) {
-            el.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${data[resource] || 0}`;
-          }
+          const p = gen("p");
+          p.id = `senior-${teamId}-${resource}`;
+          p.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${team.resources[resource]}`;
+          teamSection.appendChild(p);
         });
-
-        const devCards = data["development_cards"];
-        const devCardsElId = `senior-${teamId}-dev-cards`;
-        const devCardsEl = qs(`#${devCardsElId}`);
-        if (devCardsEl) {
-            const devCard = gen("section");
-            devCards.forEach(card => {
-                const p = gen("p");
-                p.textContent = card;
-                devCard.appendChild(p);
-            });
-            devCardsEl.appendChild(devCard);
+        
+        
+        const devCards = team.development_cards || [];
+        const devCardsEl = devCardsSection;
+        
+        if (devCards && devCards.length > 0) {
+          
+          const victoryPoints = devCards.filter(card => card === "Victory Point").length;
+          
+          if (victoryPoints > 0) {
+            
+            const totalPoints = gen("p");
+            totalPoints.classList.add("total-points");
+            totalPoints.innerHTML = `<strong>Total Points (including VP cards):</strong> ${team.points + victoryPoints}`;
+            teamSection.insertBefore(totalPoints, pointsDetails.nextSibling);
+          }
+          
+          
+          devCards.forEach(card => {
+            const p = gen("p");
+            p.textContent = card;
+            devCardsEl.appendChild(p);
+          });
+        } else {
+          const p = gen("p");
+          p.textContent = "No development cards";
+          devCardsEl.appendChild(p);
         }
+        
+        
+        seniorHandsContainer.appendChild(teamSection);
       });
     } catch (err) {
       console.error("Error loading teams resources:", err);
       displayMessage("Failed to load teams resources.");
     }
   }
+  
+  
+  Element.prototype.contains = function(text) {
+    return this.textContent.includes(text);
+  };
+  
+  
+  const originalQs = window.qs;
+  window.qs = function(selector) {
+    if (selector.includes(":contains(")) {
+      const parts = selector.split(":contains(");
+      const baseSelector = parts[0];
+      const textToMatch = parts[1].slice(0, -1); 
+      
+      const elements = document.querySelectorAll(baseSelector);
+      for (let i = 0; i < elements.length; i++) {
+        if (elements[i].textContent.includes(textToMatch)) {
+          return elements[i];
+        }
+      }
+      return null;
+    }
+    
+    return originalQs(selector);
+  };
 
-async function showPersonalHand() {
+  async function showPersonalHand() {
     if (!teamColor) {
       displayMessage("You must be logged in with a team to see your hand.");
       return;
     }
-
-    showPage("personal-hand");
   
     try {
       const teamDocRef = doc(db, "teams", teamColor);
@@ -410,64 +891,98 @@ async function showPersonalHand() {
         wool: data.wool || 0,
         brick: data.brick || 0,
         lumber: data.lumber || 0
-      };      
+      };
   
+      
+      const resources = [
+        data.grain || 0,
+        data.wool || 0,
+        data.brick || 0,
+        data.lumber || 0
+      ];
+      const points = Math.min(...resources);
+  
+      
+      const yourHandSection = qs("#your-hand");
+      let pointsDisplay = qs("#personal-points");
+      
+      if (!pointsDisplay) {
+        pointsDisplay = gen("h3");
+        pointsDisplay.id = "personal-points";
+        yourHandSection.insertBefore(pointsDisplay, yourHandSection.firstChild);
+      }
+      
+      pointsDisplay.textContent = `Your Points: ${points}`;
+  
+      
       qs("#grain").textContent = `Grain: ${data.grain || 0}`;
       qs("#wool").textContent = `Wool: ${data.wool || 0}`;
       qs("#brick").textContent = `Brick: ${data.brick || 0}`;
       qs("#lumber").textContent = `Lumber: ${data.lumber || 0}`;
   
       const devCardsSection = qs("#dev-cards-in-hand");
-        devCardsSection.innerHTML = "";
-        if (data.development_cards && data.development_cards.length > 0) {
-            data.development_cards.forEach(card => {
-              const div = gen("div");
-              div.classList.add("dev-card");
-          
-              const descP = gen("p");
-              descP.classList.add("dev-card-description");
-              descP.textContent = devCardDescriptions[card] || "No description available.";
-              div.appendChild(descP);
-          
-              const p = gen("p");
-              p.textContent = card;
-              div.appendChild(p);
-          
-              const btn = gen("button");
-              if (card === "Robber" || card === "Choose 2 Resources") {
-                btn.textContent = `Use ${card}`;
-                btn.onclick = () => {
-                  if (card === "Robber") showPage("use-robber");
-                  else if (card === "Choose 2 Resources") showPage("use-choose-2-resources");
-                };
-              } else {
-                btn.textContent = `Point will be added automatically at the end of the game`;
-                btn.classList.add("disabled");
-              }
-              div.appendChild(btn);
-          
-              devCardsSection.appendChild(div);
-            });
-          }           else {
-            devCardsSection.textContent = "No development cards";
+      devCardsSection.innerHTML = "";
+      if (data.development_cards && data.development_cards.length > 0) {
+        
+        const victoryPoints = data.development_cards.filter(card => card === "Victory Point").length;
+        
+        
+        if (victoryPoints > 0) {
+          const vpCounterDiv = gen("div");
+          vpCounterDiv.classList.add("dev-card-counter");
+          vpCounterDiv.innerHTML = `<p>You have <strong>${victoryPoints} Victory Point</strong> card${victoryPoints > 1 ? 's' : ''} (hidden from other teams)</p>`;
+          devCardsSection.appendChild(vpCounterDiv);
         }
-
-        qs("#personal-hand-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
+        
+        data.development_cards.forEach(card => {
+          const div = gen("div");
+          div.classList.add("dev-card");
   
-      showPage("personal-hand");
+          const descP = gen("p");
+          descP.classList.add("dev-card-description");
+          descP.textContent = devCardDescriptions[card] || "No description available.";
+          div.appendChild(descP);
+  
+          const p = gen("p");
+          p.textContent = card;
+          div.appendChild(p);
+  
+          const btn = gen("button");
+          if (card === "Robber" || card === "Choose 2 Resources") {
+            btn.textContent = `Use ${card}`;
+            btn.onclick = () => {
+              if (card === "Robber") showPage("use-robber");
+              else if (card === "Choose 2 Resources") showPage("use-choose-2-resources");
+            };
+          } else if (card === "Victory Point") {
+            btn.textContent = `Point will be added automatically at the end of the game`;
+            btn.classList.add("disabled");
+          } else {
+            btn.textContent = `Point will be added automatically at the end of the game`;
+            btn.classList.add("disabled");
+          }
+          div.appendChild(btn);
+  
+          devCardsSection.appendChild(div);
+        });
+      } else {
+        devCardsSection.textContent = "No development cards";
+      }
+  
+      qs("#personal-hand-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+  
     } catch (err) {
       console.error("Error loading personal hand:", err);
       displayMessage("Failed to load your hand.");
     }
   }
 
-const seeHandBtn = qs("#see-hand-btn");
-if (seeHandBtn) {
-  seeHandBtn.addEventListener("click", () => {
-    showPersonalHand();
-  });
-}
+  const seeHandBtn = qs("#see-hand-btn");
+  if (seeHandBtn) {
+    seeHandBtn.addEventListener("click", () => {
+      showPage("personal-hand");
+    });
+  }
 
 const loginForm = qs("#login-form");
 if (loginForm) {
@@ -478,9 +993,44 @@ async function submitTradeRequest() {
     const toTeam = qs("#team-to-request-from").value;
   
     const resources = ["grain", "wool", "brick", "lumber"];
+    const resourceInputs = {
+      offer: {},
+      request: {}
+    };
   
     const offer = {};
     const request = {};
+
+    
+    const resetTradeForm = () => {
+      
+      const toTeamSelect = qs("#team-to-request-from");
+      toTeamSelect.value = "";
+      
+      
+      resources.forEach(resource => {
+        const offerInput = qs(`#offer-${resource}`);
+        const requestInput = qs(`#request-${resource}`);
+        if (offerInput) offerInput.value = "0";
+        if (requestInput) requestInput.value = "0";
+      });
+      
+      
+      const requestTradeBtn = qs("#submit-trade-request");
+      if (requestTradeBtn) requestTradeBtn.disabled = true;
+    };
+
+    if (!teamColor) {
+      displayMessage("You must be logged in to request a trade.");
+      resetTradeForm();
+      return;
+    }
+  
+    if (!toTeam) {
+      displayMessage("Select a team to trade with.");
+      resetTradeForm();
+      return;
+    }
 
     const fromTeamRef = doc(db, "teams", teamColor);
     const toTeamRef = doc(db, "teams", toTeam);
@@ -492,6 +1042,7 @@ async function submitTradeRequest() {
 
     if (!fromTeamDoc.exists() || !toTeamDoc.exists()) {
       displayMessage("One of the teams no longer exists.");
+      resetTradeForm();
       return;
     }
 
@@ -504,6 +1055,7 @@ async function submitTradeRequest() {
         offer[resource] = isNaN(amt) ? 0 : amt;
         if ((fromData[resource] || 0) < offer[resource]) {
           displayMessage(`You don't have enough ${resource}.`);
+          resetTradeForm();
           return;
         }
       
@@ -512,44 +1064,33 @@ async function submitTradeRequest() {
       
         if ((toData[resource] || 0) < request[resource]) {
           displayMessage(`Team ${toTeam} doesn't have enough ${resource}.`);
+          resetTradeForm();
           return;
         }
 
         if (offer[resource] > 0 && request[resource] > 0) {
             dupResources.push(resource);
-          }
-
-      }
-      if (dupResources.length > 0) {
-          let message = "You cannot offer and request the same resource: ";
-          for (const resource of dupResources) {
-              message += `${resource}, `;
-            }
-            message = message.slice(0, -2);
-            message += ".";
+        }
+    }
+    
+    if (dupResources.length > 0) {
+        let message = "You cannot offer and request the same resource: ";
+        for (const resource of dupResources) {
+            message += `${resource}, `;
+        }
+        message = message.slice(0, -2);
+        message += ".";
         displayMessage(message);
+        resetTradeForm();
         return;
-      }
+    }
       
     const hasOffer = Object.values(offer).some(amount => amount > 0);
     const hasRequest = Object.values(request).some(amount => amount > 0);
   
-    if (!teamColor) {
-      displayMessage("You must be logged in to request a trade.");
-      return;
-    }
-  
-    if (!toTeam) {
-      displayMessage("Select a team to trade with.");
-      return;
-    }
-  
     if (!hasOffer || !hasRequest) {
       displayMessage("You must offer and request at least one resource.");
-      const toTeamSelect = qs("#team-to-request-from");
-      toTeamSelect.value = "";
-      const requestTradeBtn = qs("#submit-trade-request");
-      requestTradeBtn.disabled = true;
+      resetTradeForm();
       return;
     }
   
@@ -564,146 +1105,338 @@ async function submitTradeRequest() {
       });
       await notifyTradeRequest(toTeam, teamColor);
       displayMessage(`Trade request sent to ${toTeam}.`);
+      resetTradeForm();
     } catch (err) {
       console.error("Error submitting trade request:", err);
       displayMessage("Failed to submit trade request.");
+      resetTradeForm();
     }
-  }
+}
+
+let tradeRequestsUnsubscribe = null;
   
-  
-  function listenForIncomingTrades() {
+function listenForIncomingTrades() {
+    
+    if (tradeRequestsUnsubscribe) {
+        tradeRequestsUnsubscribe();
+        tradeRequestsUnsubscribe = null;
+    }
+
     if (!teamColor) {
-      console.warn("listenForIncomingTrades called but teamColor is empty");
-      return;
+        console.warn("listenForIncomingTrades called but teamColor is empty");
+        
+        teamColor = localStorage.getItem("teamColor") || "";
+        if (!teamColor) {
+            console.error("Could not get team color from localStorage");
+            return;
+        }
     }
-  
+
+    
+      
     const q = query(
-      tradeRequestsCol,
-      where("toTeam", "==", teamColor),
-      where("status", "==", "pending")
+        tradeRequestsCol,
+        where("toTeam", "==", teamColor),
+        where("status", "==", "pending")
     );
-  
+
     const tradeRequestsSection = qs("#trade-requests");
     tradeRequestsSection.innerHTML = "";
-  
-    onSnapshot(q, (snapshot) => {
-      tradeRequestsSection.innerHTML = "";
-      if (snapshot.empty) {
-        tradeRequestsSection.textContent = "No requests to respond to.";
-        return;
-      }
-  
-      snapshot.forEach((docSnap) => {
-        const trade = docSnap.data();
-        const tradeId = docSnap.id;
-  
-        const div = gen("div");
-        div.classList.add("trade-request");
-  
-        div.innerHTML = `
-            <p><strong>${trade.fromTeam}</strong> is offering:</p>
-            <ul>
-                ${Object.entries(trade.offer).map(([res, amt]) => `<li>${res}: ${amt}</li>`).join("")}
-            </ul>
-            <p>In exchange for:</p>
-            <ul>
-                ${Object.entries(trade.request).map(([res, amt]) => `<li>${res}: ${amt}</li>`).join("")}
-            </ul>
-            <button class="accept-trade" data-id="${tradeId}">Accept</button>
-            <button class="reject-trade" data-id="${tradeId}">Reject</button>
-        `;
 
-  
-        tradeRequestsSection.appendChild(div);
-      }, (error) => {
-        console.error("Error with onSnapshot listener:", error);
-      });
-  
-      qsa(".accept-trade").forEach(btn => {
-        btn.onclick = () => handleTradeResponse(btn.dataset.id, true);
-      });
-      qsa(".reject-trade").forEach(btn => {
-        btn.onclick = () => handleTradeResponse(btn.dataset.id, false);
-      });
+    
+    tradeRequestsUnsubscribe = onSnapshot(q, async (snapshot) => {
+        
+        tradeRequestsSection.innerHTML = "";
+        if (snapshot.empty) {
+            tradeRequestsSection.textContent = "No requests to respond to.";
+            return;
+        }
+
+        
+        const teamRef = doc(db, "teams", teamColor);
+        const teamDoc = await getDoc(teamRef);
+        if (!teamDoc.exists()) {
+            console.error("Current team not found in database");
+            return;
+        }
+        const currentTeamResources = teamDoc.data();
+        
+        
+        snapshot.forEach((docSnap) => {
+            const trade = docSnap.data();
+            const tradeId = docSnap.id;
+
+            const div = gen("div");
+            div.classList.add("trade-request");
+
+            div.innerHTML = `
+                <p><strong>${trade.fromTeam}</strong> is offering:</p>
+                <ul>
+                    ${Object.entries(trade.offer).map(([res, amt]) => `<li>${res}: ${amt}</li>`).join("")}
+                </ul>
+                <p>In exchange for:</p>
+                <ul>
+                    ${Object.entries(trade.request).map(([res, amt]) => `<li>${res}: ${amt}</li>`).join("")}
+                </ul>
+                <button class="accept-trade" data-id="${tradeId}">Accept</button>
+                <button class="reject-trade" data-id="${tradeId}">Reject</button>
+                <div class="insufficient-resources hidden">Insufficient resources to complete this trade.</div>
+            `;
+
+            
+            let hasSufficientResources = true;
+            for (const [resource, amount] of Object.entries(trade.request)) {
+                if ((currentTeamResources[resource] || 0) < amount) {
+                    hasSufficientResources = false;
+                    break;
+                }
+            }
+
+            tradeRequestsSection.appendChild(div);
+            
+            
+            const acceptBtn = div.querySelector(".accept-trade");
+            const insufficientMsg = div.querySelector(".insufficient-resources");
+            
+            if (!hasSufficientResources) {
+                acceptBtn.disabled = true;
+                acceptBtn.classList.add("disabled");
+                insufficientMsg.classList.remove("hidden");
+            }
+        });
+
+        qsa(".accept-trade").forEach(btn => {
+            if (!btn.disabled) {
+                btn.onclick = () => handleTradeResponse(btn.dataset.id, true);
+            }
+        });
+        
+        qsa(".reject-trade").forEach(btn => {
+            btn.onclick = () => handleTradeResponse(btn.dataset.id, false);
+        });
     });
-  }
-  
-  async function handleTradeResponse(tradeId, accepted) {
+}
+
+async function handleTradeResponse(tradeId, accepted) {
     try {
-      const tradeDocRef = doc(db, "trade_requests", tradeId);
-      const tradeDoc = await getDoc(tradeDocRef);
-  
-      if (!tradeDoc.exists()) {
-        displayMessage("Trade request not found.");
-        return;
-      }
-  
-      const trade = tradeDoc.data();
+        const tradeDocRef = doc(db, "trade_requests", tradeId);
+        const tradeDoc = await getDoc(tradeDocRef);
 
-      if (!accepted) {
-        await deleteDoc(tradeDocRef);
-        await notifyTradeRejected(trade.fromTeam, trade.toTeam);
-        return;
-      }
+        if (!tradeDoc.exists()) {
+            displayMessage("Trade request not found.");
+            return;
+        }
 
-      await notifyTradeAccepted(trade.fromTeam, trade.toTeam);
-  
-      const fromTeamRef = doc(db, "teams", trade.fromTeam);
-      const toTeamRef = doc(db, "teams", trade.toTeam);
-  
-      const [fromTeamDoc, toTeamDoc] = await Promise.all([
-        getDoc(fromTeamRef),
-        getDoc(toTeamRef),
-      ]);
-  
-      if (!fromTeamDoc.exists() || !toTeamDoc.exists()) {
-        displayMessage("One of the teams no longer exists.");
-        return;
-      }
-  
-      const fromData = fromTeamDoc.data();
-      const toData = toTeamDoc.data();
-  
-      const newFrom = { ...fromData };
-      const newTo = { ...toData };
-  
-      for (const [res, amt] of Object.entries(trade.offer)) {
-        newFrom[res] = (newFrom[res] || 0) - amt;
-        newTo[res] = (newTo[res] || 0) + amt;
-      }
+        const trade = tradeDoc.data();
 
-      for (const [res, amt] of Object.entries(trade.request)) {
-        newTo[res] = (newTo[res] || 0) - amt;
-        newFrom[res] = (newFrom[res] || 0) + amt;
-      }
-  
-      await Promise.all([
-        updateDoc(fromTeamRef, newFrom),
-        updateDoc(toTeamRef, newTo),
-        deleteDoc(tradeDocRef),
-      ]);
-  
+        if (!accepted) {
+            await deleteDoc(tradeDocRef);
+            await notifyTradeRejected(trade.fromTeam, trade.toTeam);
+            return;
+        }
+
+        
+        const toTeamRef = doc(db, "teams", trade.toTeam);
+        const toTeamDoc = await getDoc(toTeamRef);
+        
+        if (!toTeamDoc.exists()) {
+            displayMessage("Your team no longer exists.");
+            return;
+        }
+        
+        const toData = toTeamDoc.data();
+        
+        
+        let hasSufficientResources = true;
+        let insufficientResource = "";
+        
+        for (const [resource, amount] of Object.entries(trade.request)) {
+            if ((toData[resource] || 0) < amount) {
+                hasSufficientResources = false;
+                insufficientResource = resource;
+                break;
+            }
+        }
+        
+        if (!hasSufficientResources) {
+            displayMessage(`Trade cancelled: You don't have enough ${insufficientResource}.`);
+            return;
+        }
+
+        await notifyTradeAccepted(trade.fromTeam, trade.toTeam);
+
+        const fromTeamRef = doc(db, "teams", trade.fromTeam);
+        const fromTeamDoc = await getDoc(fromTeamRef);
+
+        if (!fromTeamDoc.exists()) {
+            displayMessage("The requesting team no longer exists.");
+            return;
+        }
+
+        const fromData = fromTeamDoc.data();
+
+        
+        for (const [resource, amount] of Object.entries(trade.offer)) {
+            if ((fromData[resource] || 0) < amount) {
+                displayMessage(`Trade cancelled: ${trade.fromTeam} no longer has enough ${resource}.`);
+                return;
+            }
+        }
+
+        const newFrom = { ...fromData };
+        const newTo = { ...toData };
+
+        for (const [res, amt] of Object.entries(trade.offer)) {
+            newFrom[res] = (newFrom[res] || 0) - amt;
+            newTo[res] = (newTo[res] || 0) + amt;
+        }
+
+        for (const [res, amt] of Object.entries(trade.request)) {
+            newTo[res] = (newTo[res] || 0) - amt;
+            newFrom[res] = (newFrom[res] || 0) + amt;
+        }
+
+        await Promise.all([
+            updateDoc(fromTeamRef, newFrom),
+            updateDoc(toTeamRef, newTo),
+            deleteDoc(tradeDocRef),
+        ]);
+
     } catch (err) {
-      console.error("Error in handleTradeResponse:", err);
-      displayMessage("Something went wrong processing the trade.");
+        console.error("Error in handleTradeResponse:", err);
+        displayMessage("Something went wrong processing the trade.");
+    }
+}
+
+  async function createCompositeIndex() {
+    try {
+      const q = query(
+        notificationsCol,
+        where("team", "==", teamColor),
+        orderBy("timestamp", "desc")
+      );
+
+      await getDocs(q);
+      
+
+      return q;
+      
+    } catch (error) {
+      if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        console.error("Missing composite index. Please create it in the Firebase console.");
+
+        const urlMatch = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
+        if (urlMatch) {
+          const indexUrl = urlMatch[0];
+          
+
+          displayMessage("Notifications are being configured. Please try again in a few minutes.");
+
+          return query(
+            notificationsCol,
+            where("team", "==", teamColor)
+          );
+        }
+      }
+      throw error;
     }
   }
+
+function renderNotifications(notificationPanel, notifications) {
+    if (!notificationPanel) return;
+    
+    notificationPanel.innerHTML = "";
+    
+    if (!notifications || notifications.length === 0) {
+      notificationPanel.innerHTML = "<p>No notifications.</p>";
+      return;
+    }
+
+    const notificationsContainer = gen("div");
+    notificationsContainer.classList.add("notifications-container");
+
+    const headerRow = gen("div");
+    headerRow.classList.add("notification-header");
+    headerRow.innerHTML = "<span>Message</span><span>Time</span><span></span>";
+    notificationsContainer.appendChild(headerRow);
+
+    notifications.forEach((note) => {
+      let timeString = "";
+      if (note.timestamp) {
+        let date;
+        if (typeof note.timestamp.toDate === "function") {
+          date = note.timestamp.toDate();
+        } else if (typeof note.timestamp === "string") {
+          date = new Date(note.timestamp);
+        } else if (typeof note.timestamp === "number") {
+          date = new Date(note.timestamp);
+        }
+        
+        if (date instanceof Date && !isNaN(date) && window.formatRelativeTime) {
+          timeString = window.formatRelativeTime(date);
+        } else {
+          timeString = new Date(note.timestamp).toLocaleString();
+        }
+      }
+      
+      const notificationRow = gen("div");
+      notificationRow.classList.add("notification-row");
+      notificationRow.dataset.id = note.id;
+      
+      const messageSpan = gen("span");
+      messageSpan.classList.add("notification-message");
+      messageSpan.textContent = note.message || "New notification";
+      
+      const timeSpan = gen("span");
+      timeSpan.classList.add("notification-time");
+      timeSpan.textContent = timeString;
+      
+      const deleteBtn = gen("button");
+      deleteBtn.classList.add("notification-delete");
+      deleteBtn.innerHTML = "×"; 
+      deleteBtn.title = "Delete notification";
+      deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteNotification(note.id);
+      });
+      
+      notificationRow.appendChild(messageSpan);
+      notificationRow.appendChild(timeSpan);
+      notificationRow.appendChild(deleteBtn);
+      notificationsContainer.appendChild(notificationRow);
+    });
+    
+    notificationPanel.appendChild(notificationsContainer);
+  }
+
+  const notificationsBtn = qs("#notifications-btn");
+if (notificationsBtn) {
+  notificationsBtn.addEventListener("click", () => {
+    showPage("notifications");
+  });
+}
   
-  function listenForNotifications() {
+  
+  async function listenForNotifications() {
     if (!teamColor && !isSenior) {
       console.warn("listenForNotifications called but teamColor is empty and user is not senior");
       return;
     }
-
+  
     if (isSenior) {
       teamColor = seniorRole;
     }
   
-    const q = query(
-      notificationsCol,
-      where("team", "==", teamColor),
-    //   orderBy("createdAt", "desc")
-    );
+    let q;
+    try {
+      q = await createCompositeIndex();
+    } catch (error) {
+      console.error("Error setting up notifications query:", error);
+      q = query(notificationsCol, where("team", "==", teamColor));
+      
+      
+      displayMessage("There was an issue loading notifications in order. Loading in default order instead.");
+    }
   
     const notificationsBtn = qs("#notifications-btn");
     if (!notificationsBtn) return;
@@ -713,7 +1446,7 @@ async function submitTradeRequest() {
         notificationsBtn.classList.remove("has-notification");
         notificationsBtn.textContent = "Notifications";
         const notificationPanel = qs("#notification-panel");
-        if (notificationPanel) {
+        if (notificationPanel && notificationPanel.closest('.page:not(.hidden)')) {
           notificationPanel.innerHTML = "<p>No notifications.</p>";
         }
         return;
@@ -723,31 +1456,18 @@ async function submitTradeRequest() {
       notificationsBtn.textContent = `Notifications (${snapshot.size})`;
   
       const notificationPanel = qs("#notification-panel");
-      if (notificationPanel) {
-        notificationPanel.innerHTML = "";
+      if (notificationPanel && notificationPanel.closest('.page:not(.hidden)')) {
+        
+        const notifications = [];
         snapshot.forEach((docSnap) => {
-          const note = docSnap.data();
-  
-          let timeString = "";
-          if (note.timestamp) {
-            let date;
-            if (typeof note.timestamp.toDate === "function") {
-              date = note.timestamp.toDate();
-            } else if (typeof note.timestamp === "string") {
-              date = new Date(note.timestamp);
-            } else if (typeof note.timestamp === "number") {
-              date = new Date(note.timestamp);
-            }
-          
-            if (date instanceof Date && !isNaN(date) && window.formatRelativeTime) {
-              timeString = window.formatRelativeTime(date, { addSuffix: true });
-            }
-          }
-  
-          const p = gen("p");
-          p.innerHTML = `${note.message || "New notification"}<br>${timeString}`;
-          notificationPanel.appendChild(p);
+          notifications.push({
+            id: docSnap.id,
+            ...docSnap.data()
+          });
         });
+        
+        
+        renderNotifications(notificationPanel, notifications);
       }
     });
   }
@@ -810,7 +1530,7 @@ async function submitTradeRequest() {
         displayMessage("Success");
       }
       await addNotification(teamId, message);
-      await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to ${teamId}`);
+      await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to Team ${teamId}`);
     } catch (err) {
       console.error("Error assigning resource card:", err);
     }
@@ -872,7 +1592,7 @@ async function submitTradeRequest() {
         displayMessage("Success");
       }
       await addNotification(teamId, `You lost ${amount} ${resourceType} cards.`);
-      await addNotification(seniorRole, `${amount} ${resourceType} cards removed from Team ${teamId}`);
+      await addNotification(seniorRole, `${amount} ${resourceType} card(s) removed from Team ${teamId}`);
     } catch (err) {
       console.error("Error removing resource card:", err);
     }
@@ -1117,12 +1837,9 @@ if (logoutBtn) {
   if (submitTradeBtn) {
     submitTradeBtn.addEventListener("click", () => {
       submitTradeRequest()
-      const toTeamSelect = qs("#team-to-request-from");
-      toTeamSelect.value = "";
     });
   }
   
-  const notificationsBtn = qs("#notifications-btn");
   if (notificationsBtn) {
     notificationsBtn.addEventListener("click", () => {
         const notificationsTimestamp = qs("#notifications-last-updated");
@@ -1317,20 +2034,19 @@ if (manageTradesBtn) {
       const userDoc = querySnapshot.docs[0];
   
       const userData = userDoc.data();
-      const teamColor = userData.teamId || "";
-      if (teamColor === seniorRole) {
+      const userTeamColor = userData.teamId || "";
+      if (userTeamColor === seniorRole) {
         isSenior = true;
         localStorage.setItem("isSenior", "true");
       } else {
-        localStorage.setItem("teamColor", teamColor);
+        teamColor = userTeamColor; 
+        localStorage.setItem("teamColor", userTeamColor);
       }
   
     } catch (err) {
       console.error("Failed to load team data:", err);
     }
   }
-  
-  
 
 qs("#submit-login").addEventListener("click", function (e) {
     e.preventDefault();
@@ -1338,9 +2054,12 @@ qs("#submit-login").addEventListener("click", function (e) {
     const password = document.getElementById("loginPassword").value;
     login(email, password);
   });
-  
 
-  function setupAfterLogin() {
-    listenForNotifications();
+  async function setupAfterLogin() {
+    try {
+      await listenForNotifications();
+    } catch (error) {
+      console.error("Error setting up notifications:", error);
+      displayMessage("There was an issue setting up notifications. Some features may not work correctly.");
+    }
   }
-  
