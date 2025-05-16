@@ -319,20 +319,15 @@ async function getAllResources() {
         }
 
         teamsWithPoints.forEach(team => {
-            const teamSection = gen("section");
-            teamSection.classList.add("team-hand");
-            const teamHeader = gen("h3");
-            const teamName = capitalize(team.id);
-            teamHeader.textContent = `${teamName} (${team.points} Points)`;
             const resources = ["grain", "wool", "brick", "lumber"];
-            teamSection.appendChild(teamHeader);
             resources.forEach(resource => {
-                const p = gen("p");
-                p.id = `${team.id}-${resource}`;
-                p.textContent = `${capitalize(resource)}: ${team.resources[resource]}`;
-                teamSection.appendChild(p);
+              const elementId = `${team.id}-${resource}`;
+              const element = qs(`#${elementId}`);
+              if (element) {
+                element.textContent = `${capitalize(resource)}: ${team.resources[resource]}`;
+              }
             });
-        });
+          });
 
         return true;
     } catch (err) {
@@ -495,28 +490,6 @@ function setUpButtons() {
         });
     }
     
-    const homeBtn = qs("#home-btn");
-    if (homeBtn) {
-        if (isGameActive) {
-            homeBtn.addEventListener("click", () => {
-                if (auth.currentUser || localStorage.getItem("teamColor")) {
-                    getAllResources();
-                    const leaderboardTimestamp = qs("#leaderboard-last-updated");
-                    if (leaderboardTimestamp) {
-                        leaderboardTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-                    }
-                    showPage("home");
-                } else {
-                    console.log("User not logged in, can't go to home");
-                }
-            });
-        } else {
-            homeBtn.addEventListener("click", () => {
-                showPage("game-over");
-            });
-        }
-    }
-    
     const logoutBtn = qs("#logout-btn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", logout);
@@ -659,6 +632,54 @@ function setUpButtons() {
         login(email, password);
     });
 }
+
+function fixHomeButtonListener() {
+    const homeBtn = qs("#home-btn");
+    if (!homeBtn) {
+        console.error("Home button not found");
+        return;
+    }
+    
+    const newBtn = homeBtn.cloneNode(true);
+    homeBtn.parentNode.replaceChild(newBtn, homeBtn);
+    
+    newBtn.addEventListener("click", async () => {
+        try {
+            const gameStateRef = doc(db, "game_state", "current");
+            const gameStateDoc = await getDoc(gameStateRef);
+            
+            if (gameStateDoc.exists()) {
+                const data = gameStateDoc.data();
+                isGameActive = data.active || false;
+            } else {
+                console.log("No game state found");
+                isGameActive = false;
+            }
+            
+            if (isGameActive) {
+                if (auth.currentUser || localStorage.getItem("teamColor")) {
+                    getAllResources();
+                    const leaderboardTimestamp = qs("#leaderboard-last-updated");
+                    if (leaderboardTimestamp) {
+                        leaderboardTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                    }
+                    showPage("home");
+                } else {
+                    console.log("User not logged in, can't go to home");
+                }
+            } else {
+                showPage("game-over");
+            }
+        } catch (err) {
+            console.error("Error in home button handler:", err);
+            showPage("home");
+        }
+    });
+    
+    console.log("Fixed home button listener");
+}
+
+fixHomeButtonListener();
 
 /* force selections */
 function forceSelections() {
@@ -2281,39 +2302,46 @@ function gameOverNavSetup() {
     const nav = qs("nav");
     if (nav) nav.classList.remove("hidden");
 
-    if (isSenior) {
-        if (isGameActive) {
-            const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
-            if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
+    const seeHandBtn = qs("#see-hand-btn");
+    if (seeHandBtn) seeHandBtn.classList.add("hidden");
+    
+    const manageTradesBtn = qs("#manage-trades-btn");
+    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
+    
+    const notificationsBtn = qs("#notifications-btn");
+    if (notificationsBtn) notificationsBtn.classList.add("hidden");
+    
+    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
+    
+    const seniorManageGameBtn = qs("#senior-manage-game-btn");
+    if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
+    
+    const seniorNotificationsBtn = qs("#senior-notifications-btn");
+    if (seniorNotificationsBtn) seniorNotificationsBtn.classList.add("hidden");
 
-            const notificationsBtn = qs("#notifications-btn");
+    if (isGameActive) {
+        if (isSenior) {
+            if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
+            if (seniorNotificationsBtn) seniorNotificationsBtn.classList.remove("hidden");
+            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
+        } else {
+            if (seeHandBtn) seeHandBtn.classList.remove("hidden");
+            if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
             if (notificationsBtn) notificationsBtn.classList.remove("hidden");
         }
 
-        const seeHandBtn = qs("#see-hand-btn");
-        if (seeHandBtn) seeHandBtn.classList.add("hidden");
-
-        const manageTradesBtn = qs("#manage-trades-btn");
-        if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
-
-        const seniorManageGameBtn = qs("#senior-manage-game-btn");
-        if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
-
-        getAllHands();
-    } else {
-        if (isGameActive) {
-            const seeHandBtn = qs("#see-hand-btn");
-            if (seeHandBtn) seeHandBtn.classList.remove("hidden");
-
-            const manageTradesBtn = qs("#manage-trades-btn");
-            if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
-
-            const notificationsBtn = qs("#notifications-btn");
-            if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+        if (isSenior) {
+            getAllHands();
+        } else {
             populateTeamsDropdown();
             listenForIncomingTrades();
             populateRobberTargetDropdown();
             loadDevCardDescriptions();
+        }
+    } else {
+        if (isSenior) {
+            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
         } else {
             nav.innerHTML = `<button id="logout-btn">Logout</button>`;
         }
