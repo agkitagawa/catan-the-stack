@@ -1015,14 +1015,14 @@ async function showPersonalHand() {
                 const div = gen("div");
                 div.classList.add("dev-card");
 
+                const p = gen("p");
+                p.textContent = card;
+                div.appendChild(p);
+
                 const descP = gen("p");
                 descP.classList.add("dev-card-description");
                 descP.textContent = devCardDescriptions[card] || "No description available.";
                 div.appendChild(descP);
-
-                const p = gen("p");
-                p.textContent = card;
-                div.appendChild(p);
 
                 const btn = gen("button");
                 if (card === "Robber" || card === "Choose 2 Resources") {
