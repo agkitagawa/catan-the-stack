@@ -40,23 +40,58 @@ let teamColor = "";
 const seniorRole = "Senior";
 let teamResources = {};
 let isSenior = false;
-let loggedIn = localStorage.getItem("loggedIn") === "true";
+let authCheckComplete = false;
 
-if (loggedIn) {
-  teamColor = localStorage.getItem("teamColor") || "";
-  isSenior = localStorage.getItem("isSenior") === "true";
-  if (isSenior) {
-    seniorSetup();
-    getAllResources();
-    setupAfterLogin();
-  } else {
-    teamSetup(teamColor);
-    setupAfterLogin();
-    getAllResources();
-  }
-} else {
-  showPage("login", false);
-}
+const auth = getAuth();
+
+showPage("loading", false);
+setupNavigationGuards();
+
+onAuthStateChanged(auth, (user) => {
+    // Mark auth check as complete
+    authCheckComplete = true;
+    
+    if (user) {
+      console.log("User is logged in:", user.email);
+      localStorage.setItem("loggedIn", "true");
+      
+      showPage("loading", false);
+      
+      loadTeamData(user.uid).then(() => {
+        teamColor = localStorage.getItem("teamColor") || "";
+        isSenior = localStorage.getItem("isSenior") === "true";
+        
+        if (isSenior) {
+          seniorSetup();
+          getAllResources();
+          setupAfterLogin();
+        } else {
+          teamSetup(teamColor);
+          setupAfterLogin();
+          getAllResources();
+        }
+        
+        if (!location.hash) {
+          history.replaceState({ pageId: "home" }, "", "#home");
+        }
+        
+        showPage(location.hash.substring(1) || "home", false);
+      }).catch(err => {
+        console.error("Error loading team data:", err);
+        displayMessage("Error loading user data");
+        showPage("login", false);
+      });
+    } else {
+      console.log("No user is logged in");
+      localStorage.removeItem("loggedIn");
+      teamColor = "";
+      isSenior = false;
+      teamResources = {};
+      
+      showPage("login", false);
+      history.replaceState({ pageId: "login" }, "", "#login");
+    }
+  });
 
 const tradeRequestsCol = collection(db, "trade_requests");
 const notificationsCol = collection(db, "notifications");
@@ -90,8 +125,6 @@ function displayMessage(msg) {
 }
   
 async function login() {
-    const auth = getAuth();
-  
     const email = qs("#loginEmail").value.trim();
     const password = qs("#loginPassword").value.trim();
   
@@ -100,80 +133,75 @@ async function login() {
     }
   
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
-      localStorage.setItem("loggedIn", "true");
-  
-      // Load team and show home page
-      loadTeamData(user.uid); // adjust this if needed
-      showPage("home");
-      displayMessage("Login successful!");
-  
-      const uid = user.uid;
-      const usersRef = collection(db, "users");
-        const q = query(usersRef, where("uid", "==", user.uid));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-        displayMessage("User record not found in Firestore.");
-        return;
-        }
-
-        const userDoc = querySnapshot.docs[0];
-        const userData = userDoc.data();
-  
-      localStorage.setItem("loggedIn", "true");
-
-      console.log("User data:", userData);
-  
-      if (userData.role === seniorRole) {
-        isSenior = true;
-        localStorage.setItem("isSenior", "true");
-        seniorSetup();
-        await getAllResources();
-        setupAfterLogin();
-      } else if (userData.teamId) {
-        teamColor = userData.teamId;
-        isSenior = false;
-        localStorage.setItem("teamColor", teamColor);
-        teamSetup(teamColor);
-        setupAfterLogin();
-        await getAllResources();
-      } else {
-        displayMessage("No team assigned to this user.");
-      }
-  
+        await signInWithEmailAndPassword(auth, email, password);
+        displayMessage("Login successful!");
+    
     } catch (err) {
       console.error("Login error:", err);
       displayMessage("Login failed: " + err.message);
     }
-  }
-  
+}
 
 function logout() {
     const auth = getAuth();
     signOut(auth).then(() => {
       localStorage.removeItem("loggedIn");
+      localStorage.removeItem("teamColor");
+      localStorage.removeItem("isSenior");
+      
       teamColor = "";
       isSenior = false;
       teamResources = {};
   
-      showPage("login", false);
-      location.replace("#login");
-      localStorage.removeItem("teamColor");
-      localStorage.removeItem("isSenior");
       const email = qs("#loginEmail");
       const password = qs("#loginPassword");
-    email.value = "";
-    password.value = "";
-  
+      if (email) email.value = "";
+      if (password) password.value = "";
+
+      history.replaceState(null, "", "#login");
+      
+      const historyLength = window.history.length;
+      for (let i = 0; i < historyLength - 1; i++) {
+        window.history.pushState(null, "", "#login");
+      }
+      
+      showPage("login", false);
       displayMessage("You have been logged out.");
+      
+      window.addEventListener("popstate", enforceAuthCheck);
+      
     }).catch((error) => {
       console.error("Logout failed:", error);
       displayMessage("Error logging out. Please try again.");
     });
-  }
+}
+
+function enforceAuthCheck(event) {
+    const user = auth.currentUser;
+    if (!user) {
+        history.replaceState(null, "", "#login");
+        showPage("login", false);
+        if (event) event.preventDefault();
+    }
+}
+
+function setupNavigationGuards() {
+    window.addEventListener("load", () => {
+        const user = auth.currentUser;
+        if (!user && location.hash !== "#login") {
+            history.replaceState(null, "", "#login");
+            showPage("login", false);
+        }
+    });
+    
+    window.addEventListener("hashchange", () => {
+        const user = auth.currentUser;
+        if (!user && location.hash !== "#login") {
+            history.replaceState(null, "", "#login");
+            showPage("login", false);
+        }
+    });
+}
   
 
 function seniorSetup() {
@@ -221,36 +249,53 @@ async function populateTeamsDropdown() {
       select.appendChild(option);
     });
   }  
-
-  document.addEventListener("DOMContentLoaded", () => {
-    if (!loggedIn) {
-      history.replaceState({ pageId: "login" }, "", "#login");
-      showPage("login", false);
-    } else {
-      if (!location.hash) {
-        history.replaceState({ pageId: "home" }, "", "#home");
-      }
-      showPage(location.hash.substring(1) || "home", false);
-    }
-  });
   
   window.addEventListener("popstate", (event) => {
+    const user = auth.currentUser;
+    if (!user) {
+        history.replaceState(null, "", "#login");
+        showPage("login", false);
+        return;
+    }
+    
     const pageId = event.state?.pageId || location.hash.substring(1) || "login";
     showPage(pageId, false);
   });
   
   function showPage(pageId, pushState = true) {
+    if (pageId === "loading") {
+      const pages = document.querySelectorAll(".page");
+      pages.forEach(page => page.classList.add("hidden"));
+      
+      const loadingPage = document.querySelector("#loading");
+      if (loadingPage) {
+        loadingPage.classList.remove("hidden");
+      }
+      
+      const nav = qs("nav");
+      if (nav) nav.classList.add("hidden");
+      
+      return;
+    }
+    
+    const user = auth.currentUser;
+    const isLoggedInFromStorage = localStorage.getItem("teamColor") !== null;
+    
+    if (!user && !isLoggedInFromStorage && pageId !== "login" && authCheckComplete) {
+      pageId = "login";
+      history.replaceState({ pageId }, "", `#${pageId}`);
+    }
+    
     const pages = document.querySelectorAll(".page");
     pages.forEach(page => page.classList.add("hidden"));
-
+  
     const nav = qs("nav");
     if (pageId === "login") {
       if (nav) nav.classList.add("hidden");
     } else {
-        if (nav) nav.classList.remove("hidden");
+      if (nav) nav.classList.remove("hidden");
     }
     
-  
     const page = document.querySelector(`#${pageId}`);
     if (page) {
       page.classList.remove("hidden");
@@ -260,36 +305,38 @@ async function populateTeamsDropdown() {
     }
   }
 
-
-async function getAllResources() {
-  try {
-    const teamsCol = collection(db, "teams");
-    const teamsSnapshot = await getDocs(teamsCol);
-
-    if (teamsSnapshot.empty) {
-      displayMessage("No teams found.");
-      return;
-    }
-
-    teamsSnapshot.forEach(teamDoc => {
-      const teamId = teamDoc.id.toLowerCase();
-      const data = teamDoc.data();
-
-      const resources = ["grain", "wool", "brick", "lumber"];
-
-      resources.forEach(resource => {
-        const elId = `${teamId}-${resource}`;
-        const el = qs(`#${elId}`);
-        if (el) {
-          el.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${data[resource] || 0}`;
-        }
+  async function getAllResources() {
+    try {
+      const teamsCol = collection(db, "teams");
+      const teamsSnapshot = await getDocs(teamsCol);
+  
+      if (teamsSnapshot.empty) {
+        displayMessage("No teams found.");
+        return;
+      }
+  
+      teamsSnapshot.forEach(teamDoc => {
+        const teamId = teamDoc.id.toLowerCase();
+        const data = teamDoc.data();
+  
+        const resources = ["grain", "wool", "brick", "lumber"];
+  
+        resources.forEach(resource => {
+          const elId = `${teamId}-${resource}`;
+          const el = qs(`#${elId}`);
+          if (el) {
+            el.textContent = `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${data[resource] || 0}`;
+          }
+        });
       });
-    });
-  } catch (err) {
-    console.error("Error loading teams resources:", err);
-    displayMessage("Failed to load teams resources.");
+      
+      return true; 
+    } catch (err) {
+      console.error("Error loading teams resources:", err);
+      displayMessage("Failed to load teams resources.");
+      throw err; 
+    }
   }
-}
 
 async function getAllHands() {
     try {
@@ -950,14 +997,19 @@ async function submitTradeRequest() {
       devCardDescriptions[doc.id] = doc.data().description;
     });
   }
-  
+
   const homeBtn = qs("#home-btn");
   if (homeBtn) {
     homeBtn.addEventListener("click", () => {
-        if (localStorage.getItem("loggedIn") === "true") {
+        if (auth.currentUser || localStorage.getItem("teamColor")) {
             getAllResources();
-            qs("#leaderboard-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            const leaderboardTimestamp = qs("#leaderboard-last-updated");
+            if (leaderboardTimestamp) {
+                leaderboardTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            }
             showPage("home");
+        } else {
+            console.log("User not logged in, can't go to home");
         }
     });
   }
@@ -1238,19 +1290,6 @@ if (manageTradesBtn) {
       select.value = "";
     });
   }
-
-  const auth = getAuth();
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("User is logged in:", user.email);
-      loadTeamData(user.uid);
-      showPage("home");
-    } else {
-      console.log("No user is logged in");
-      showPage("login");
-    }
-  });
 
   async function loadTeamData(userId) {
     try {
