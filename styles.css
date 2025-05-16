@@ -25,83 +25,126 @@
     --background: #71abde; 
     --card-bg: #ebd198;
     --border-color: #886637;
-  }
-  
-  * {
+    --header-bg: #8a3112;  /* Slightly darker than the original #9d3814 */
+    --header-text: #d4af37;
+    --gradient-top: #9d3814;
+    --gradient-middle: #b17226;
+    --gradient-bottom: #d4af37;
+}
+
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-  }
-  
-  body {
+}
+
+html {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+body {
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--dark-text);
     line-height: 1.6;
     padding: 0;
     margin: 0;
-    min-height: 100vh;
+    min-height: 100%;
     font-size: 16px;
     background: linear-gradient(to bottom, 
-        #9d3814 0%, 
-        #9d3814 80%, 
-        #b17226 90%, 
-        #d4af37 100%);
+        var(--gradient-top) 0%, 
+        var(--gradient-top) 80%, 
+        var(--gradient-middle) 90%, 
+        var(--gradient-bottom) 100%);
+    background-attachment: fixed;
+    position: relative;
 }
 
-  /* Header styles */
-  header {
-    background-color: #9d3814;
-    color: #d4af37;
-    padding: 1rem;
+header {
+    background-color: var(--header-bg);
+    width: 100%;
+    padding: 10px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: center;
     position: sticky;
     top: 0;
     z-index: 100;
-    font-size: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
+}
 
-  header h1 {
-    font-family: 'Cinzel', serif;
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-shadow: 1px 1px 2px black;
-    font-weight: 700;
-    text-align: center;
+h1 {
+    color: var(--header-text);
     margin: 0;
-    cursor: pointer;
-    font-size: 4rem;
-  }
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+}
 
-  /* Navigation */
-  nav {
+nav {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
+    justify-content: center;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  nav ul {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
+}
+
+nav ul {
     display: flex;
     list-style: none;
     gap: 1rem;
-    flex-wrap: wrap;
-  }
-  
-  nav li {
+}
+
+nav li {
     cursor: pointer;
     padding: 0.4rem 1rem;
-    color: #edd78e;
+    color: var(--header-text);
     border-radius: 4px;
     transition: background-color 0.2s;
-    background-color: #782d11;
-  }
-  
-  nav li:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+nav li:hover {
     background-color: rgba(255, 255, 255, 0.2);
-  }
-  
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: center;
+}
+
+p {
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    nav {
+        padding: 0.3rem 0;
+    }
+    
+    nav ul {
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+    
+    .container {
+        margin: 15px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    nav li {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.9rem;
+    }
+}
+
   #logout-btn {
     background-color: var(--card-bg);
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;

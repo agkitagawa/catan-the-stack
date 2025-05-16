@@ -2278,8 +2278,8 @@ function modifyNavigationForGameOver(isSeniorUser) {
         nav.innerHTML = `
         <ul>
           <li id="senior-manage-game-btn">Manage Game</li>
+          <li id="logout-btn" class="hidden">Log Out</li>
         </ul>
-        <button id="logout-btn">Logout</button>
       `;
 
         const seniorManageGameBtn = qs("#senior-manage-game-btn");
@@ -2289,7 +2289,7 @@ function modifyNavigationForGameOver(isSeniorUser) {
             });
         }
     } else {
-        nav.innerHTML = `<button id="logout-btn">Logout</button>`;
+        nav.innerHTML = `<ul><li id="logout-btn" class="hidden">Log Out</li></ul>`;
     }
 
     const logoutBtn = qs("#logout-btn");
@@ -2298,7 +2298,7 @@ function modifyNavigationForGameOver(isSeniorUser) {
     }
 }
 
-function gameOverNavSetup() {
+function navSetup() {
     const nav = qs("nav");
     if (nav) nav.classList.remove("hidden");
 
@@ -2331,6 +2331,9 @@ function gameOverNavSetup() {
             if (notificationsBtn) notificationsBtn.classList.remove("hidden");
         }
 
+        const logOutBtn = qs("#logout-btn");
+        if (logOutBtn) logOutBtn.classList.remove("hidden");
+
         if (isSenior) {
             getAllHands();
         } else {
@@ -2343,7 +2346,7 @@ function gameOverNavSetup() {
         if (isSenior) {
             if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
         } else {
-            nav.innerHTML = `<button id="logout-btn">Logout</button>`;
+            nav.innerHTML = `<li id="logout-btn" class="hidden">Log Out</li>`;
         }
     }
 
@@ -2468,11 +2471,11 @@ function setupAfterLogin() {
                     displayGameOver();
                     return;
                 } else {
-                    gameOverNavSetup();
+                    navSetup();
                 }
             });
         } else {
-            gameOverNavSetup();
+            navSetup();
         }
     });
 
