@@ -36,7 +36,7 @@
         <li id="see-hand-btn">See Your Hand</li>
         <li id="manage-trades-btn">Manage Trades</li>
         <li id="senior-see-hands-btn" class="hidden">Hands</li>
-        <li id="senior-manage-cards-btn" class="hidden">Manage Cards</li>
+        <li id="senior-manage-game-btn" class="hidden">Manage Game</li>
       </ul>
       <button id="logout-btn">Logout</button>
     </nav>
@@ -259,7 +259,13 @@
     </section>
 
     <section id="senior-manage-cards" class="hidden page">
-        <h2>Assign Resources</h2>
+      </section>
+
+      <section id="senior-manage-game" class="hidden page">
+        <section id="senior-manage-hands">
+        <h2>Manage Teams' Hands</h2>
+
+        <h3>Assign Resources</h3>
         <section id="assign-resources-section">
           <label>Team:
             <select id="team-to-assign-resources" required>
@@ -284,7 +290,7 @@
           </label>
           <button id="submit-assign-resources" disabled>Submit</button>
         </section>
-        <h2>Assign Random Development Card</h2>
+        <h3>Assign Random Development Card</h3>
         <section id="assign-random-dev-cards-section">
           <label>Team:
             <select id="team-to-assign-random-dev-card" required>
@@ -297,7 +303,7 @@
           </label>
           <button id="submit-assign-random-dev-card" disabled>Submit</button>
         </section>
-        <h2>Assign Specific Development Card</h2>
+        <h3>Assign Specific Development Card</h3>
         <section id="assign-specific-dev-cards-section">
           <label>Team:
             <select id="team-to-assign-specific-dev-card" required>
@@ -318,7 +324,7 @@
           </label>
           <button id="submit-assign-specific-dev-card" disabled>Submit</button>
         </section>
-        <h2>Remove Resources</h2>
+        <h3>Remove Resources</h3>
         <section id="remove-resources-section">
           <label>Team:
             <select id="team-to-remove-resources" required>
@@ -343,7 +349,7 @@
           </label>
           <button id="submit-remove-resources" disabled>Submit</button>
         </section>
-        <h2>Remove Development Card</h2>
+        <h3>Remove Development Card</h3>
         <section id="remove-dev-card-section">
           <label>Team:
             <select id="team-to-remove-dev-card" required>
@@ -364,6 +370,29 @@
           </label>
           <button id="submit-remove-dev-card" disabled>Submit</button>
         </section>
+        </section>
+
+        <h2>Gameplay</h2>
+        <section id="game-management-controls">
+          <div id="game-status-message"></div>
+          <button id="start-new-game-btn">Start New Game</button>
+          <button id="end-game-btn" disabled>End Game</button>
+          
+          <div id="end-game-confirmation-container" class="hidden">
+            <p class="warning-text">WARNING: This will end the current game and display final scores. This action cannot be undone.</p>
+            <p>To confirm, please type "end game" in the box below:</p>
+            <input type="text" id="end-game-confirmation-input" placeholder="Type 'end game' here">
+            <div class="confirmation-buttons">
+              <button id="confirm-end-game-btn">Confirm</button>
+              <button id="cancel-end-game-btn">Cancel</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section id="game-over" class="hidden page">
+        <h2 id="winner-announcement">Game Over</h2>
+        <section id="final-scores"></section>
       </section>
   </main>
 </body>
