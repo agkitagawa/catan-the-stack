@@ -48,7 +48,6 @@ showPage("loading", false);
 setupNavigationGuards();
 
 onAuthStateChanged(auth, (user) => {
-    // Mark auth check as complete
     authCheckComplete = true;
     
     if (user) {
@@ -63,10 +62,10 @@ onAuthStateChanged(auth, (user) => {
         
         if (isSenior) {
           seniorSetup();
-          getAllResources();
           setupAfterLogin();
+          getAllResources();
         } else {
-          teamSetup(teamColor);
+          teamSetup();
           setupAfterLogin();
           getAllResources();
         }
@@ -119,7 +118,14 @@ async function addNotification(team, message) {
 function displayMessage(msg) {
   const el = qs("#message");
   if (!el) return;
-  el.textContent = msg;
+  const text = gen("p");
+  text.textContent = msg;
+  const closeBtn = gen("button");
+  closeBtn.classList.add("close-message-btn");
+  closeBtn.textContent = "X";
+  closeBtn.onclick = () => el.classList.add("hidden");
+  el.appendChild(text);
+  el.appendChild(closeBtn);
   el.classList.remove("hidden");
   setTimeout(() => el.classList.add("hidden"), 5000);
 }
@@ -218,7 +224,7 @@ function seniorSetup() {
   showPage("home");
 }
 
-function teamSetup(team) {
+function teamSetup() {
   const nav = qs("nav");
   if (nav) nav.classList.remove("hidden");
 
@@ -1301,7 +1307,6 @@ if (manageTradesBtn) {
 
   async function loadTeamData(userId) {
     try {
-      console.log("Loading team data for userId:", userId);
       const q = query(collection(db, "users"), where("uid", "==", userId));
       const querySnapshot = await getDocs(q);
   
@@ -1310,11 +1315,15 @@ if (manageTradesBtn) {
       }
   
       const userDoc = querySnapshot.docs[0];
-      console.log(userDoc.id, " => ", userDoc.data());
   
       const userData = userDoc.data();
       const teamColor = userData.teamId || "";
-      localStorage.setItem("teamColor", teamColor);
+      if (teamColor === seniorRole) {
+        isSenior = true;
+        localStorage.setItem("isSenior", "true");
+      } else {
+        localStorage.setItem("teamColor", teamColor);
+      }
   
     } catch (err) {
       console.error("Failed to load team data:", err);
