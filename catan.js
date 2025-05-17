@@ -996,6 +996,7 @@ async function showPersonalHand() {
         const points = Math.min(...resources);
 
         const yourHandSection = qs("#your-hand");
+        yourHandSection.classList.add(teamColor.toLowerCase());
         let pointsDisplay = qs("#personal-points");
 
         if (!pointsDisplay) {

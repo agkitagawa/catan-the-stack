@@ -217,9 +217,6 @@ p {
     margin-left: auto;
     margin-right: auto;
   }
-
-  #personal-points {
-  }
   
   .team-hand h3 {
     margin-top: 0;
@@ -227,20 +224,20 @@ p {
   }
   
   /* Team colors */
-  .team-hand:nth-child(1), .senior-team-hand:nth-child(1), .green {
-    border-left-color: var(--green);
+  .team-hand:nth-child(1), .senior-team-hand:nth-child(1), #your-hand.green {
+    border-left: 15px solid var(--green);
   }
   
-  .team-hand:nth-child(2), .senior-team-hand:nth-child(2), .red {
-    border-left-color: var(--red);
+  .team-hand:nth-child(2), .senior-team-hand:nth-child(2), #your-hand.red {
+    border-left: 15px solid var(--red);
   }
   
-  .team-hand:nth-child(3), .senior-team-hand:nth-child(3), .blue {
-    border-left-color: var(--blue);
+  .team-hand:nth-child(3), .senior-team-hand:nth-child(3), #your-hand.blue {
+    border-left: 15px solid var(--blue);
   }
   
-  .team-hand:nth-child(4), .senior-team-hand:nth-child(4), .white {
-    border-left-color: var(--dark-text);
+  .team-hand:nth-child(4), .senior-team-hand:nth-child(4), #your-hand.white {
+    border-left: 15px solid var(--dark-text);
   }
   
   /* Resource colors */
