@@ -57,6 +57,8 @@ function wholePageEvenListeners() {
         if (initialHash && initialHash !== "login" && initialHash !== "loading") {
             sessionStorage.setItem("initialHash", initialHash);
         }
+
+        setupHamburgerMenu();
     });
     
     window.addEventListener("hashchange", function () {
@@ -230,6 +232,7 @@ onAuthStateChanged(auth, (user) => {
             if (isSenior) {
                 addManageGameToSenior();
             }
+
             setupAfterLogin();
             getAllResources();
 
@@ -675,8 +678,6 @@ function fixHomeButtonListener() {
             showPage("home");
         }
     });
-    
-    console.log("Fixed home button listener");
 }
 
 fixHomeButtonListener();
@@ -822,7 +823,8 @@ function showPage(pageId, pushState = true) {
         pages.forEach(page => page.classList.add("hidden"));
         const loadingPage = document.querySelector("#loading");
         if (loadingPage) {
-            qs("#menu-toggle").classList.add("hidden");
+            const menuToggle = qs("#menu-toggle");
+            if (menuToggle) menuToggle.classList.add("hidden");
             loadingPage.classList.remove("hidden");
         }
 
@@ -840,13 +842,19 @@ function showPage(pageId, pushState = true) {
         history.replaceState({ pageId }, "", `#${pageId}`);
     }
 
+    const nav = qs("nav");
+    const menuToggle = qs("#menu-toggle");
+    const openMenuBtn = qs(".menu-is-closed");
+    const closeMenuBtn = qs(".menu-is-open");
+    
+    if (nav) nav.classList.add("hidden");
+    
     if (pageId === "login") {
-        qs("#menu-toggle").classList.add("hidden");
+        if (menuToggle) menuToggle.classList.add("hidden");
     } else {
-        qs("#menu-toggle").classList.remove("hidden");
-        qs("nav").classList.add("hidden");
-        qs(".menu-is-closed").classList.remove("hidden");
-        qs(".menu-is-open").classList.add("hidden");
+        if (menuToggle) menuToggle.classList.remove("hidden");
+        if (openMenuBtn) openMenuBtn.classList.remove("hidden");
+        if (closeMenuBtn) closeMenuBtn.classList.add("hidden");
     }
 
     const pages = document.querySelectorAll(".page");
@@ -1437,13 +1445,6 @@ async function confirmEndGameExecution() {
         });
 
         const teamsWithPoints = await calculateFinalScores();
-        console.log("Final scores:", teamsWithPoints.map(t => ({
-            team: t.id,
-            points: t.points,
-            victoryPoints: t.victoryPoints,
-            totalPoints: t.totalPoints
-        })));
-
         const highestScore = teamsWithPoints[0].totalPoints;
         const winners = teamsWithPoints.filter(team => team.totalPoints === highestScore);
 
@@ -2317,59 +2318,51 @@ function modifyNavigationForGameOver(isSeniorUser) {
     }
 }
 
-function navSetup() {
-    const seeHandBtn = qs("#see-hand-btn");
-    if (seeHandBtn) seeHandBtn.classList.add("hidden");
-    
+function navSetup() {const seeHandBtn = qs("#see-hand-btn");
     const manageTradesBtn = qs("#manage-trades-btn");
-    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
-    
     const notificationsBtn = qs("#notifications-btn");
-    if (notificationsBtn) notificationsBtn.classList.add("hidden");
-    
     const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
-    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
-    
     const seniorManageGameBtn = qs("#senior-manage-game-btn");
-    if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
-    
     const seniorNotificationsBtn = qs("#senior-notifications-btn");
+    const logoutBtn = qs("#logout-btn");
+    const nav = qs("nav");
+    
+    if (seeHandBtn) seeHandBtn.classList.add("hidden");
+    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
+    if (notificationsBtn) notificationsBtn.classList.add("hidden");
+    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
+    if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
     if (seniorNotificationsBtn) seniorNotificationsBtn.classList.add("hidden");
-
+    if (logoutBtn) logoutBtn.classList.add("hidden");
+    
     if (isGameActive) {
         if (isSenior) {
             if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
-            if (seniorNotificationsBtn) seniorNotificationsBtn.classList.remove("hidden");
             if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
+            if (seniorNotificationsBtn) seniorNotificationsBtn.classList.remove("hidden");
         } else {
             if (seeHandBtn) seeHandBtn.classList.remove("hidden");
             if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
             if (notificationsBtn) notificationsBtn.classList.remove("hidden");
         }
-
-        const logOutBtn = qs("#logout-btn");
-        if (logOutBtn) logOutBtn.classList.remove("hidden");
-
-        if (isSenior) {
-            getAllHands();
-        } else {
-            populateTeamsDropdown();
-            listenForIncomingTrades();
-            populateRobberTargetDropdown();
-            loadDevCardDescriptions();
-        }
     } else {
         if (isSenior) {
             if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
-        } else {
-            nav.innerHTML = `<li id="logout-btn" class="hidden">Log Out</li>`;
         }
     }
-
-    const logoutBtn = qs("#logout-btn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", logout);
+    
+    if (logoutBtn) logoutBtn.classList.remove("hidden");
+    
+    if (isSenior) {
+        getAllHands();
+    } else {
+        populateTeamsDropdown();
+        listenForIncomingTrades();
+        populateRobberTargetDropdown();
+        loadDevCardDescriptions();
     }
+    
+    setupHamburgerMenu();
 }
 
 function addManageGameToSenior() {
@@ -2477,25 +2470,47 @@ function setupGameManagement() {
     addGameManagementEventListeners();
 }
 
-function setupHamburgerMenu() {
-    const menuToggle = qs("#menu-toggle");
-    const closeMenuBtn = qs(".menu-is-open");
-    const openMenuBtn = qs(".menu-is-closed");
-    const nav = qs("nav");
+function setupHamburgerMenu() {const menuToggle = document.querySelector("#menu-toggle");
+    const closeMenuBtn = document.querySelector(".menu-is-open");
+    const openMenuBtn = document.querySelector(".menu-is-closed");
+    const nav = document.querySelector("nav");
     
     if (!menuToggle || !nav) {
-      console.error("Menu toggle or nav elements not found");
-      return;
+        console.error("Menu toggle or nav elements not found", {
+            menuToggle: !!menuToggle,
+            nav: !!nav,
+            openMenuBtn: !!openMenuBtn,
+            closeMenuBtn: !!closeMenuBtn
+        });
+        return;
     }
     
-    menuToggle.addEventListener("click", () => {
-      menuToggle.classList.toggle("active");
-      nav.classList.toggle("hidden");
-      openMenuBtn.classList.toggle("hidden");
-      closeMenuBtn.classList.toggle("hidden");
+    function toggleMenuHandler() {
+        const isNavHidden = nav.classList.contains("hidden");
+        
+        if (isNavHidden) {
+            nav.classList.remove("hidden");
+            openMenuBtn.classList.add("hidden");
+            closeMenuBtn.classList.remove("hidden");
+        } else {
+            nav.classList.add("hidden");
+            openMenuBtn.classList.remove("hidden");
+            closeMenuBtn.classList.add("hidden");
+        }
+    }
+    
+    menuToggle.removeEventListener("click", toggleMenuHandler);
+    menuToggle.addEventListener("click", toggleMenuHandler);
+
+    const navItems = document.querySelectorAll("nav li");
+    navItems.forEach(item => {
+        item.addEventListener("click", () => {
+            nav.classList.add("hidden");
+            openMenuBtn.classList.remove("hidden");
+            closeMenuBtn.classList.add("hidden");
+        });
     });
-  }
-  
+}
 
 function setupAfterLogin() {
     checkGameActive().then(isGameActive => {

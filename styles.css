@@ -452,13 +452,25 @@ p {
     font-size: 1.3rem;
   }
 
-  #senior-manage-game h3 {
-    background-color: #b66041;
-    color: #f7ecd4;
-    padding: 0.25rem 1.5rem;
+  #senior-manage-game section:not(#game-management-controls) div {
+    background-color: var(--card-bg);
+    margin-left: 8vw;
+    margin-right: 8vw;
+    padding-top: 0.2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     margin-bottom: 1.5rem;
+  }
+
+  #senior-manage-game h3 {
+    background-color: var(--header-bg);
+    color: var(--button-text);
+    padding: 0.25rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 0;
     max-width: 60rem;
     margin-left: auto;
     margin-right: auto;
@@ -468,7 +480,7 @@ p {
   #senior-manage-game section section {
     display: flex;
     flex-direction: column;
-    width: 50rem;
+    box-shadow: none;
   }
   
   .close-message-btn {
@@ -537,11 +549,13 @@ p {
     background-color: var(--green);
     color: var(--light-text);
     margin-right: 0.5rem;
+    width: 100%;
   }
   
   .reject-trade {
     color: var(--light-text);
     background-color: var(--red);
+    width: 100%;
   }
   
   .insufficient-resources {
@@ -568,6 +582,16 @@ p {
     margin-bottom: 1rem;
     text-align: center;
     font-weight: bold;
+  }
+
+  .active {
+    background-color: var(--green-light);
+    color: var(--dark-text);
+  }
+  
+  .inactive {
+    background-color: var(--red);
+    color: var(--light-text);
   }
 
   #start-new-game-btn:not(:disabled) {
