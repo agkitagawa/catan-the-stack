@@ -31,7 +31,7 @@
     --button-text: #f1e6c3;
     --gradient-middle: #b17226;
     --gradient-bottom: #d4af37;
-    --gradient-text: #e2cd88;
+    --gradient-text: #edda9e;
 }
 
 * {
@@ -849,6 +849,12 @@ h1 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+img {
+    width: 90px;
+    height: 140px;
+    border-radius: 5px;
+}
+
 .inactive-card .card-image {
     opacity: 0.4;
     filter: grayscale(0.7);
@@ -1014,6 +1020,94 @@ h1 {
     background-color: #999;
     cursor: not-allowed;
 }
+
+#how-to-play {
+    color: var(--gradient-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#how-to-play h2 {
+    width: 100%;
+    text-align: left;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+#how-to-play p, #how-to-play li {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    text-align: left;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0.2rem;
+}
+
+#how-to-play ul, #how-to-play ol {
+    padding-left: 2rem;
+}
+
+#how-to-play h3, #how-to-play h4 {
+    font-family: 'Cinzel', serif;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.87) !important;
+    color: var(--header-text);
+    text-align: center;
+    padding: 1rem;
+}
+
+#how-to-play h3 {
+    font-size: 2.5rem;
+}
+
+#how-to-play h4 {
+    font-size: 1.5rem;
+}
+
+.resource-grid {
+    margin-top: 0;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+#how-to-play .dev-card p {
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+#how-to-play .dev-card {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding-top: 1.5rem;
+    padding-bottom: 0.2rem;
+    padding-left: 0.1;
+    padding-right: 0.1;
+    margin: 0;
+}
+
+.highlight {
+    background-color: rgba(255, 215, 0, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.tip {
+    background-color: rgba(86, 32, 24, 0.52);
+    color: #ffe1bb;
+    padding: 1rem;
+    margin: 0.8rem 0;
+    border-radius: 8px;
+}
+
 #cancel-end-game-btn {
     background-color: var(--gradient-bottom);
     color: #333;

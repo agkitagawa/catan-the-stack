@@ -3339,6 +3339,14 @@ function setupHamburgerMenu() {
                 showPage("notifications");
             });
         }
+        else if (newItem.id === "how-to-play-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("how-to-play");
+            });
+        }
         else {
             newItem.addEventListener("click", function () {
                 nav.classList.add("hidden");
@@ -3355,18 +3363,21 @@ function navSetup() {
     const notificationsBtn = qs("#notifications-btn");
     const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
     const seniorManageGameBtn = qs("#senior-manage-game-btn");
+    const howToPlayBtn = qs("#how-to-play-btn");
     const logoutBtn = qs("#logout-btn");
-    const nav = qs("nav");
 
     if (seeHandBtn) seeHandBtn.classList.add("hidden");
     if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
     if (notificationsBtn) notificationsBtn.classList.add("hidden");
     if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
     if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
+    if (howToPlayBtn) howToPlayBtn.classList.add("hidden");
     if (logoutBtn) logoutBtn.classList.add("hidden");
 
     if (isGameActive) {
         if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+        if (howToPlayBtn) howToPlayBtn.classList.remove("hidden");
+        
         if (isSenior) {
             if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
             if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
