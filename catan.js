@@ -178,7 +178,7 @@ async function login() {
         displayMessage("Login successful!");
     } catch (err) {
         console.error("Login error:", err);
-        displayMessage("Login failed: " + err.message);
+        displayMessage("Login failed: invalid credentials");
     }
 }
 
@@ -1541,6 +1541,10 @@ function renderNotifications(notificationPanel, notifications) {
 
             if (date instanceof Date && !isNaN(date) && window.formatRelativeTime) {
                 timeString = window.formatRelativeTime(date);
+                if (timeString.includes("about")) {
+                    timeString = timeString.replace("about ", "");
+                }
+                timeString += " ago";
             } else {
                 timeString = new Date(note.timestamp).toLocaleString();
             }
@@ -1782,20 +1786,32 @@ function listenForIncomingTrades() {
             const trade = docSnap.data();
             const tradeId = docSnap.id;
             const div = gen("div");
-            div.classList.add("trade-request");
+            div.classList.add("pending-trade-request");
+            const offerResources = ["grain", "wool", "brick", "lumber"]
+            .filter(res => trade.offer[res] && trade.offer[res] > 0);
+
+            const requestResources = ["grain", "wool", "brick", "lumber"]
+                .filter(res => trade.request[res] && trade.request[res] > 0);
+
             div.innerHTML = `
-                <p><strong>${trade.fromTeam}</strong> is offering:</p>
-                <ul>
-                ${["grain", "wool", "brick", "lumber"]
-                    .map(res => `<li>${capitalize(res)}: ${trade.offer[res] || 0}</li>`)
-                    .join("")}
-                </ul>
+                <p><strong>Team ${trade.fromTeam}</strong> is offering:</p>
+                ${offerResources.length > 0 ? 
+                    `<ul>
+                        ${offerResources
+                            .map(res => `<li>${capitalize(res)}: ${trade.offer[res]}</li>`)
+                            .join("")}
+                    </ul>` : 
+                    `<p class="empty-list">Nothing</p>`
+                }
                 <p>In exchange for:</p>
-                <ul>
-                ${["grain", "wool", "brick", "lumber"]
-                    .map(res => `<li>${capitalize(res)}: ${trade.offer[res] || 0}</li>`)
-                    .join("")}
-                </ul>
+                ${requestResources.length > 0 ? 
+                    `<ul>
+                        ${requestResources
+                            .map(res => `<li>${capitalize(res)}: ${trade.request[res]}</li>`)
+                            .join("")}
+                    </ul>` : 
+                    `<p class="empty-list">Nothing</p>`
+                }
                 <button class="accept-trade" data-id="${tradeId}">Accept</button>
                 <button class="reject-trade" data-id="${tradeId}">Reject</button>
                 <div class="insufficient-resources hidden">Insufficient resources to complete this trade.</div>
@@ -2043,7 +2059,7 @@ async function submitTradeRequest() {
             timestamp: Date.now(),
         });
         await notifyTradeRequest(toTeam, teamColor);
-        displayMessage(`Trade request sent to ${toTeam}.`);
+        displayMessage(`Trade request sent to Team ${toTeam}.`);
         resetTradeForm();
     } catch (err) {
         console.error("Error submitting trade request:", err);
