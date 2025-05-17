@@ -35,22 +35,32 @@
 </head>
 
 <body>
-  <header>
-    <section>
-      <h1 id="home-btn">Catan: The Stack</h1>
-    </section>
-    <nav class="hidden">
-      <ul>
-        <li id="notifications-btn">Notifications</li>
-        <li id="see-hand-btn">See Your Hand</li>
-        <li id="manage-trades-btn">Manage Trades</li>
-        <li id="senior-see-hands-btn" class="hidden">Hands</li>
-        <li id="senior-manage-game-btn" class="hidden">Manage Game</li>
-        <li id="logout-btn" class="hidden">Log Out</li>
-      </ul>
-    </nav>
-    <section id="message" class="hidden"></section>
-  </header>
+    <header>
+        <div class="header-container">
+          <h1 id="home-btn">Catan: The Stack</h1>
+          <div id="menu-toggle">
+            <div class="menu-is-closed">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+            <div class="menu-is-open hidden">
+                <div class="close-menu-btn">x</div>
+            </div>
+            </div>
+        </div>
+        <nav class="hidden">
+          <ul>
+            <li id="notifications-btn">Notifications</li>
+            <li id="see-hand-btn">See Your Hand</li>
+            <li id="manage-trades-btn">Manage Trades</li>
+            <li id="senior-see-hands-btn" class="hidden">Hands</li>
+            <li id="senior-manage-game-btn" class="hidden">Manage Game</li>
+            <li id="logout-btn" class="hidden">Log Out</li>
+          </ul>
+        </nav>
+        <section id="message" class="hidden"></section>
+    </header>
 
   <main>
     <section id="loading" class="page">

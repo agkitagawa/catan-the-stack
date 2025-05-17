@@ -114,6 +114,7 @@ nav ul {
 }
 
 nav li {
+    flex: 1;
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--gradient-text);
     padding: 0.3rem 0.8rem;
@@ -564,17 +565,7 @@ p {
     text-align: center;
     font-weight: bold;
   }
-  
-  .active {
-    background-color: var(--green-light);
-    color: var(--dark-text);
-  }
-  
-  .inactive {
-    background-color: var(--red);
-    color: var(--light-text);
-  }
-  
+
   #start-new-game-btn:not(:disabled) {
     background-color: var(--green);
     color: var(--light-text);
@@ -724,13 +715,20 @@ p {
         font-size: 1.5rem;
     }
     
-    nav li {
-        padding: 0.2rem 0.5rem;
-        font-size: 2.5vw;
-    }
+    nav ul {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      nav li {
+        width: 100%;
+        font-size: 1.2rem;
+        padding: 0.5rem 4.5rem;
+      }
 }
 
-    /* Make forms more mobile-friendly */
     form, #trade-request, #robber-section, #choose-2-section, #assign-resources-section,
     #assign-random-dev-cards-section, #assign-specific-dev-cards-section,
     #remove-resources-section, #remove-dev-card-section {
@@ -745,3 +743,50 @@ p {
       grid-template-columns: 1fr;
     }
   
+
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        width: 100%;
+      }
+      
+      /* Reduce h1 size for better layout */
+      h1 {
+        font-size: 2rem;
+        text-align: left;
+        cursor: pointer;
+      }
+      
+      /* Hamburger menu styles */
+      .menu-is-closed {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 27px;
+        height: 20px;
+        cursor: pointer;
+        z-index: 110;
+      }
+
+      .menu-is-open {
+        display: flex;
+        color: var(--header-text);
+        font-size: 1.8rem;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 27px;
+        height: 40px;
+        cursor: pointer;
+        z-index: 110;
+      }
+      
+      .hamburger-line {
+        width: 100%;
+        height: 3px;
+        background-color: var(--header-text);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+      

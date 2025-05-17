@@ -822,6 +822,7 @@ function showPage(pageId, pushState = true) {
         pages.forEach(page => page.classList.add("hidden"));
         const loadingPage = document.querySelector("#loading");
         if (loadingPage) {
+            qs("#menu-toggle").classList.add("hidden");
             loadingPage.classList.remove("hidden");
         }
 
@@ -839,15 +840,17 @@ function showPage(pageId, pushState = true) {
         history.replaceState({ pageId }, "", `#${pageId}`);
     }
 
+    if (pageId === "login") {
+        qs("#menu-toggle").classList.add("hidden");
+    } else {
+        qs("#menu-toggle").classList.remove("hidden");
+        qs("nav").classList.add("hidden");
+        qs(".menu-is-closed").classList.remove("hidden");
+        qs(".menu-is-open").classList.add("hidden");
+    }
+
     const pages = document.querySelectorAll(".page");
     pages.forEach(page => page.classList.add("hidden"));
-
-    const nav = qs("nav");
-    if (pageId === "login") {
-        if (nav) nav.classList.add("hidden");
-    } else {
-        if (nav) nav.classList.remove("hidden");
-    }
 
     const page = document.querySelector(`#${pageId}`);
     if (page) {
@@ -2315,9 +2318,6 @@ function modifyNavigationForGameOver(isSeniorUser) {
 }
 
 function navSetup() {
-    const nav = qs("nav");
-    if (nav) nav.classList.remove("hidden");
-
     const seeHandBtn = qs("#see-hand-btn");
     if (seeHandBtn) seeHandBtn.classList.add("hidden");
     
@@ -2477,6 +2477,26 @@ function setupGameManagement() {
     addGameManagementEventListeners();
 }
 
+function setupHamburgerMenu() {
+    const menuToggle = qs("#menu-toggle");
+    const closeMenuBtn = qs(".menu-is-open");
+    const openMenuBtn = qs(".menu-is-closed");
+    const nav = qs("nav");
+    
+    if (!menuToggle || !nav) {
+      console.error("Menu toggle or nav elements not found");
+      return;
+    }
+    
+    menuToggle.addEventListener("click", () => {
+      menuToggle.classList.toggle("active");
+      nav.classList.toggle("hidden");
+      openMenuBtn.classList.toggle("hidden");
+      closeMenuBtn.classList.toggle("hidden");
+    });
+  }
+  
+
 function setupAfterLogin() {
     checkGameActive().then(isGameActive => {
         if (!isGameActive) {
@@ -2495,5 +2515,7 @@ function setupAfterLogin() {
         }
     });
 
+
+    setupHamburgerMenu();
     listenForNotifications();
 }
