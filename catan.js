@@ -3377,7 +3377,7 @@ function navSetup() {
     if (isGameActive) {
         if (notificationsBtn) notificationsBtn.classList.remove("hidden");
         if (howToPlayBtn) howToPlayBtn.classList.remove("hidden");
-        
+
         if (isSenior) {
             if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
             if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
