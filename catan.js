@@ -61,12 +61,19 @@ function wholePageEvenListeners() {
         setupHamburgerMenu();
     });
 
-    window.addEventListener("hashchange", function () {
-        if (auth.currentUser || localStorage.getItem("loggedIn") === "true") {
-            const currentPage = location.hash.substring(1);
-            if (currentPage && currentPage !== "login" && currentPage !== "loading") {
-                localStorage.setItem("currentPage", currentPage);
-            }
+    window.addEventListener("hashchange", () => {
+        const user = auth.currentUser;
+        const isLoggedInFromStorage = localStorage.getItem("loggedIn") === "true";
+        const currentHash = location.hash.substring(1);
+
+        if (accessDeniedMessageShown) {
+            accessDeniedMessageShown = false;
+            return;
+        }
+
+        if (!user && !isLoggedInFromStorage && currentHash !== "login") {
+            history.replaceState({ pageId: "login" }, "", "#login");
+            showPage("login", false);
         }
     });
 
@@ -104,7 +111,6 @@ function wholePageEvenListeners() {
         showPage(pageId, false);
     });
 
-
     window.addEventListener("DOMContentLoaded", function () {
         setupGameManagement();
 
@@ -114,55 +120,36 @@ function wholePageEvenListeners() {
     });
 }
 
-function addGameManagementEventListeners() {
-    const startNewGameBtn = qs("#start-new-game-btn");
-    if (startNewGameBtn) {
-        startNewGameBtn.addEventListener("click", startNewGame);
-    }
+function initCardPageEventListeners() {
 
-    const endGameBtn = qs("#end-game-btn");
-    if (endGameBtn) {
-        endGameBtn.addEventListener("click", endGame);
-    }
+    window.addEventListener("DOMContentLoaded", function () {
+        const hash = location.hash.substring(1);
 
-    const confirmEndGameBtn = qs("#confirm-end-game-btn");
-    if (confirmEndGameBtn) {
-        confirmEndGameBtn.addEventListener("click", () => {
-            const confirmationInput = qs("#end-game-confirmation-input");
-            if (confirmationInput) {
-                confirmEndGameExecution();
-            }
-        });
-    } else {
-        console.error("Could not find confirmation button");
-    }
+        if (hash === "use-robber") {
+            setTimeout(fixRobberButtonListener, 100);
+        } else if (hash === "use-choose-2-resources") {
+            setTimeout(() => {
+                fixChoose2ButtonListener();
+                removeChoose2ButtonSetup();
+            }, 100);
+        }
+    });
 
-    const cancelEndGameBtn = qs("#cancel-end-game-btn");
-    if (cancelEndGameBtn) {
-        cancelEndGameBtn.addEventListener("click", () => {
-            const confirmationContainer = qs("#end-game-confirmation-container");
-            if (confirmationContainer) {
-                confirmationContainer.classList.add("hidden");
-            }
+    window.addEventListener("hashchange", function () {
+        const hash = location.hash.substring(1);
 
-            const confirmationInput = qs("#end-game-confirmation-input");
-            if (confirmationInput) {
-                confirmationInput.value = "";
-            }
-        });
-    } else {
-        console.error("Could not find cancel button");
-    }
-
-    const confirmationInput = qs("#end-game-confirmation-input");
-    if (confirmationInput) {
-        confirmationInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-                confirmEndGameExecution();
-            }
-        });
-    }
+        if (hash === "use-robber") {
+            setTimeout(fixRobberButtonListener, 100);
+        } else if (hash === "use-choose-2-resources") {
+            setTimeout(() => {
+                fixChoose2ButtonListener();
+                removeChoose2ButtonSetup();
+            }, 100);
+        }
+    });
 }
+
+initCardPageEventListeners();
 
 /* login/logout */
 async function login() {
@@ -174,6 +161,7 @@ async function login() {
     }
 
     try {
+        showPage("loading", false);
         await signInWithEmailAndPassword(auth, email, password);
         localStorage.setItem("currentPage", "home");
         sessionStorage.removeItem("initialHash");
@@ -181,6 +169,7 @@ async function login() {
     } catch (err) {
         console.error("Login error:", err);
         displayMessage("Login failed: invalid credentials");
+        showPage("login", false);
     }
 }
 
@@ -222,62 +211,60 @@ onAuthStateChanged(auth, (user) => {
 
     if (user) {
         localStorage.setItem("loggedIn", "true");
+
         showPage("loading", false);
 
         loadTeamData(user.uid).then(() => {
-            teamColor = localStorage.getItem("teamColor") || "";
-            isSenior = localStorage.getItem("isSenior") === "true";
-
-            if (isSenior) {
+            if (localStorage.getItem("isSenior") === "true") {
+                isSenior = true;
+                teamColor = "";
                 addManageGameToSenior();
+            } else {
+                isSenior = false;
+                teamColor = localStorage.getItem("teamColor") || "";
             }
 
-            setupAfterLogin().then(() => {
-                getAllResources();
+            return setupAfterLogin();
+        }).then(() => {
+            return checkGameActive();
+        }).then((isActiveGame) => {
+            let pageToShow = isActiveGame ? "home" : "game-over";
 
-                const storedInitialHash = sessionStorage.getItem("initialHash");
-                const currentHash = location.hash.substring(1);
+            const storedPage = localStorage.getItem("pageToRestore");
+            const initialHash = sessionStorage.getItem("initialHash");
 
-                if (storedInitialHash && storedInitialHash !== "login" && storedInitialHash !== "loading") {
-                    showPage(storedInitialHash, false);
-                    history.replaceState({ pageId: storedInitialHash }, "", `#${storedInitialHash}`);
-                    sessionStorage.removeItem("initialHash");
-                }
-                else if (currentHash && currentHash !== "login" && currentHash !== "loading") {
-                    showPage(currentHash, false);
-                }
-                else {
-                    const savedPage = localStorage.getItem("currentPage");
-                    if (savedPage && savedPage !== "login" && savedPage !== "loading") {
-                        showPage(savedPage, false);
-                        history.replaceState({ pageId: savedPage }, "", `#${savedPage}`);
-                    } else {
-                        if (isGameActive) {
-                            console.log("No saved page, defaulting to home");
-                            showPage("home", false);
-                            history.replaceState({ pageId: "home" }, "", "#home");
-                        } else {
-                            console.log("No saved page, defaulting to game over");
-                            showPage("game-over", false);
-                            history.replaceState({ pageId: "game-over" }, "", "#game-over");
-                        }
-                    }
-                }
-            });
+            if (storedPage && isActiveGame) {
+                pageToShow = storedPage;
+                localStorage.removeItem("pageToRestore");
+            } else if (initialHash && isActiveGame) {
+                pageToShow = initialHash;
+                sessionStorage.removeItem("initialHash");
+            }
+
+            showPage(pageToShow, false);
+
+            history.replaceState({ pageId: pageToShow }, "", `#${pageToShow}`);
         }).catch(err => {
-            console.error("Error loading team data:", err);
-            displayMessage("Error loading user data");
-            showPage("login", false);
+            console.error("Error during authentication flow:", err);
+            showPage("home", false);
         });
+
+        forceVerifyUserRole();
     } else {
-        console.log("No user is logged in");
         localStorage.removeItem("loggedIn");
-        sessionStorage.removeItem("initialHash");
+        localStorage.removeItem("teamColor");
+        localStorage.removeItem("isSenior");
+
         teamColor = "";
         isSenior = false;
 
+        const email = qs("#loginEmail");
+        const password = qs("#loginPassword");
+        if (email) email.value = "";
+        if (password) password.value = "";
+
+        history.replaceState(null, "", "#login");
         showPage("login", false);
-        history.replaceState({ pageId: "login" }, "", "#login");
     }
 });
 
@@ -442,22 +429,33 @@ async function loadTeamData(userId) {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
+            console.error("User data not found for userId:", userId);
             throw new Error("User data not found");
         }
 
         const userDoc = querySnapshot.docs[0];
-
         const userData = userDoc.data();
         const userTeamColor = userData.teamId || "";
+
+        teamColor = "";
+        isSenior = false;
+
         if (userTeamColor === seniorRole) {
             isSenior = true;
             localStorage.setItem("isSenior", "true");
+            localStorage.removeItem("teamColor");
         } else {
             teamColor = userTeamColor;
             localStorage.setItem("teamColor", userTeamColor);
+            localStorage.setItem("isSenior", "false");
         }
+
+        ensureSeniorStatusIsSynchronized();
+
+        return true;
     } catch (err) {
         console.error("Failed to load team data:", err);
+        return false;
     }
 }
 
@@ -518,6 +516,8 @@ function resetSeniorFormButtons() {
 
 /* button listeners */
 function setUpButtons() {
+    ensureSeniorStatusIsSynchronized();
+
     const loginForm = qs("#login-form");
     const logoutBtn = qs("#logout-btn");
     const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
@@ -532,7 +532,6 @@ function setUpButtons() {
     const submitRobberRequestBtn = qs("#submit-robber-request");
     const submitChoose2RequestBtn = qs("#submit-choose-2-request");
     const notificationsBtn = qs("#notifications-btn");
-
 
     if (loginForm) {
         loginForm.addEventListener("submit", login);
@@ -552,12 +551,14 @@ function setUpButtons() {
     if (isSenior) {
         if (seniorSeeHandsBtn) {
             seniorSeeHandsBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 showPage("senior-see-hands");
             });
         }
 
         if (seniorSubmitAssignResourcesBtn) {
             seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-resources").value;
                 const resource = qs("#resource-to-assign").value;
                 const amount = Number(qs("#amount-to-assign").value);
@@ -572,6 +573,7 @@ function setUpButtons() {
 
         if (seniorSubmitAssignRandomDevCardBtn) {
             seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-random-dev-card").value;
 
                 const randomNumber = Math.random();
@@ -591,6 +593,7 @@ function setUpButtons() {
 
         if (seniorSubmitAssignSpecificDevCardBtn) {
             seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-specific-dev-card").value;
                 const card = qs("#dev-card-to-assign").value;
                 assignDevCard(team, card);
@@ -600,6 +603,7 @@ function setUpButtons() {
 
         if (seniorSubmitRemoveResourcesBtn) {
             seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-remove-resources").value;
                 const resource = qs("#resource-to-remove").value;
                 const amount = Number(qs("#amount-to-remove").value);
@@ -610,6 +614,7 @@ function setUpButtons() {
 
         if (seniorSubmitRemoveDevCardBtn) {
             seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-remove-dev-card").value;
                 const card = qs("#dev-card-to-remove").value;
                 removeDevCard(team, card);
@@ -756,7 +761,6 @@ function fixHomeButtonListener() {
                 const data = gameStateDoc.data();
                 isGameActive = data.active || false;
             } else {
-                console.log("No game state found");
                 isGameActive = false;
             }
 
@@ -769,7 +773,6 @@ function fixHomeButtonListener() {
                     }
                     showPage("home");
                 } else {
-                    console.log("User not logged in, can't go to home");
                 }
             } else {
                 showPage("game-over");
@@ -782,6 +785,64 @@ function fixHomeButtonListener() {
 }
 
 fixHomeButtonListener();
+
+function fixTradeButtonEventHandlers() {
+
+    const submitTradeBtn = qs("#submit-trade-request");
+    if (submitTradeBtn) {
+        const newBtn = submitTradeBtn.cloneNode(true);
+        submitTradeBtn.parentNode.replaceChild(newBtn, submitTradeBtn);
+
+        newBtn.addEventListener("click", function () {
+            const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+            if (userIsSenior) {
+                displayMessage("What are you doing? Aren't you a senior?");
+            } else {
+                submitTradeRequest();
+            }
+        });
+    }
+}
+
+function fixTradeRequestButton() {
+    const requestFrom = qs("#team-to-request-from");
+    const requestTradeBtn = qs("#submit-trade-request");
+
+    if (!requestFrom || !requestTradeBtn) return;
+
+    function updateButtonState() {
+        const teamSelected = requestFrom.value;
+
+        const resources = ["grain", "wool", "brick", "lumber"];
+        let hasOffer = false;
+        let hasRequest = false;
+
+        for (const resource of resources) {
+            const offerValue = parseInt(qs(`#offer-${resource}`).value, 10) || 0;
+            const requestValue = parseInt(qs(`#request-${resource}`).value, 10) || 0;
+
+            if (offerValue > 0) hasOffer = true;
+            if (requestValue > 0) hasRequest = true;
+        }
+
+        requestTradeBtn.disabled = !(teamSelected && (hasOffer && hasRequest));
+    }
+
+    requestFrom.addEventListener("change", updateButtonState);
+
+    const resources = ["grain", "wool", "brick", "lumber"];
+    resources.forEach(resource => {
+        const offerInput = qs(`#offer-${resource}`);
+        const requestInput = qs(`#request-${resource}`);
+
+        if (offerInput) offerInput.addEventListener("input", updateButtonState);
+        if (requestInput) requestInput.addEventListener("input", updateButtonState);
+    });
+
+    updateButtonState();
+}
+
+fixTradeRequestButton();
 
 /* force selections */
 function forceSelections() {
@@ -893,6 +954,60 @@ function forceSelections() {
     }
 }
 
+function setDropdownDefaults() {
+    const resource1Dropdown = qs("#choose-2-resource1");
+    const resource2Dropdown = qs("#choose-2-resource2");
+
+    if (resource1Dropdown) {
+        let hasEmptyOption = false;
+        for (let i = 0; i < resource1Dropdown.options.length; i++) {
+            if (resource1Dropdown.options[i].value === "") {
+                hasEmptyOption = true;
+                break;
+            }
+        }
+
+        if (!hasEmptyOption) {
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.text = "Select resource";
+            emptyOption.selected = true;
+            emptyOption.disabled = true;
+
+            resource1Dropdown.insertBefore(emptyOption, resource1Dropdown.firstChild);
+        }
+
+        resource1Dropdown.value = "";
+    }
+
+    if (resource2Dropdown) {
+        let hasEmptyOption = false;
+        for (let i = 0; i < resource2Dropdown.options.length; i++) {
+            if (resource2Dropdown.options[i].value === "") {
+                hasEmptyOption = true;
+                break;
+            }
+        }
+
+        if (!hasEmptyOption) {
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.text = "Select resource";
+            emptyOption.selected = true;
+            emptyOption.disabled = true;
+
+            resource2Dropdown.insertBefore(emptyOption, resource2Dropdown.firstChild);
+        }
+
+        resource2Dropdown.value = "";
+    }
+
+    const robberDropdown = qs("#robber-target-team");
+    if (robberDropdown) {
+        robberDropdown.value = "";
+    }
+}
+
 /* display stuff */
 function displayMessage(msg) {
     const el = qs("#message");
@@ -919,14 +1034,16 @@ function displayMessage(msg) {
 }
 
 function showPage(pageId, pushState = true) {
+    forceSeniorRoleCheck();
+
     if (pageId === "loading") {
         const pages = document.querySelectorAll(".page");
         pages.forEach(page => page.classList.add("hidden"));
         const loadingPage = document.querySelector("#loading");
         if (loadingPage) {
+            loadingPage.classList.remove("hidden");
             const menuToggle = qs("#menu-toggle");
             if (menuToggle) menuToggle.classList.add("hidden");
-            loadingPage.classList.remove("hidden");
         }
 
         const nav = qs("nav");
@@ -941,6 +1058,26 @@ function showPage(pageId, pushState = true) {
     if (!user && !isLoggedInFromStorage && pageId !== "login" && authCheckComplete) {
         pageId = "login";
         history.replaceState({ pageId }, "", `#${pageId}`);
+    }
+
+    ensureSeniorStatusIsSynchronized();
+
+    if (pageId !== "login" && pageId !== "loading" && pageId !== "home" && pageId !== "game-over" && !checkPageAccess(pageId)) {
+        setTimeout(() => {
+            const safePage = isGameActive ? "home" : "game-over";
+            history.replaceState({ pageId: safePage }, "", `#${safePage}`);
+
+            const pages = document.querySelectorAll(".page");
+            pages.forEach(page => page.classList.add("hidden"));
+
+            const page = document.querySelector(`#${safePage}`);
+            if (page) {
+                page.classList.remove("hidden");
+                localStorage.setItem("currentPage", safePage);
+                populatePageContent(safePage);
+            }
+        }, 100);
+        return;
     }
 
     const nav = qs("nav");
@@ -978,6 +1115,60 @@ function showPage(pageId, pushState = true) {
 }
 
 async function populatePageContent(pageId) {
+    if (pageId === "use-choose-2-resources") {
+        const submitButton = qs("#submit-choose-2-request");
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        const hasChoose2 = await hasDevCard("Choose 2 Resources");
+
+        if (hasChoose2) {
+            await loadDevCardDescriptions();
+            updateChoose2ResourcesPage();
+            resetChoose2ButtonOnPageLoad();
+
+            setTimeout(() => {
+                fixChoose2ButtonListener();
+                const btn = qs("#submit-choose-2-request");
+                if (btn) {
+                    const res1 = qs("#choose-2-resource1");
+                    const res2 = qs("#choose-2-resource2");
+                    btn.disabled = !(res1 && res1.value && res2 && res2.value);
+                }
+            }, 100);
+
+            setTimeout(() => {
+                removeChoose2ButtonSetup();
+            }, 300);
+
+            return;
+        } else {
+            displayMessage("You don't have a Choose 2 Resources card to use!");
+            showPage("home", false);
+            return;
+        }
+    }
+
+    if (pageId === "use-robber") {
+        const hasRobber = await hasDevCard("Robber");
+
+        if (hasRobber) {
+            await populateRobberTargetDropdown();
+            updateRobberPage();
+
+            setTimeout(() => {
+                fixRobberButtonListener();
+            }, 300);
+
+            return;
+        } else {
+            displayMessage("You don't have a Robber card to use!");
+            showPage("home", false);
+            return;
+        }
+    }
+
     switch (pageId) {
         case "home":
             getAllResources();
@@ -992,104 +1183,24 @@ async function populatePageContent(pageId) {
             break;
 
         case "notifications":
-            const notificationPanel = qs("#notification-panel");
-            if (notificationPanel) {
-                notificationPanel.innerHTML = "<p>Loading notifications...</p>";
-            }
-
-            const notificationsTimestamp = qs("#notifications-last-updated");
-            if (notificationsTimestamp) {
-                notificationsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-            }
-
-            addClearAllNotificationsButton();
-
-            (async () => {
-                try {
-                    const q = query(
-                        notificationsCol,
-                        where("team", "==", teamColor),
-                        orderBy("timestamp", "desc")
-                    );
-
-                    const snapshot = await getDocs(q);
-
-                    if (snapshot.empty) {
-                        if (notificationPanel) {
-                            notificationPanel.innerHTML = "<p>No notifications.</p>";
-                        }
-                        return;
-                    }
-
-                    const notifications = [];
-                    snapshot.forEach((docSnap) => {
-                        notifications.push({
-                            id: docSnap.id,
-                            ...docSnap.data()
-                        });
-                    });
-
-                    renderNotifications(notificationPanel, notifications);
-
-                } catch (error) {
-                    console.error("Error fetching notifications:", error);
-                    if (notificationPanel) {
-                        notificationPanel.innerHTML = "<p>Error loading notifications. Please try again later.</p>";
-                    }
-                    displayMessage("Error loading notifications");
-                }
-            })();
             break;
 
         case "manage-trades":
-            const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
-            if (tradeRequestsTimestamp) {
-                tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-            }
-
             listenForIncomingTrades();
+            fixTradeRequestButton();
             break;
 
         case "senior-see-hands":
             getAllHands();
             break;
 
-        case "use-robber":
-            const hasRobber = await hasDevCard("Robber");
-            if (!hasRobber) {
-                displayMessage("You don't have a Robber card to use!");
-                showPage("personal-hand", false);
-                return;
-            }
-
-            populateRobberTargetDropdown();
-            updateRobberPage();
-            break;
-
-        case "use-choose-2-resources":
-            const hasChoose2 = await hasDevCard("Choose 2 Resources");
-            if (!hasChoose2) {
-                displayMessage("You don't have a Choose 2 Resources card to use!");
-                showPage("personal-hand", false);
-                return;
-            }
-
-            loadDevCardDescriptions();
-            updateChoose2ResourcesPage();
-            break;
-
         case "senior-manage-game":
-            checkGameActive();
-            setTimeout(() => {
-                setupSimplifiedEndGame();
-            }, 100);
             break;
 
         default:
             break;
     }
 }
-
 async function showPersonalHand() {
     if (!teamColor) {
         displayMessage("You must be logged in with a team to see your hand.");
@@ -1262,8 +1373,70 @@ populatePageContent = function (pageId) {
     }
     else if (pageId === "use-choose-2-resources") {
         updateChoose2ResourcesPage();
+    } else if (pageId === "notifications") {
+        updateNotificationsDisplay();
+
+        const timestampEl = qs("#notifications-last-updated");
+        if (timestampEl) {
+            timestampEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
     }
 };
+
+function updateNotificationsDisplay() {
+    let targetTeam = teamColor;
+    if (isSenior) {
+        targetTeam = seniorRole;
+    }
+
+    const q = query(
+        notificationsCol,
+        where("team", "==", targetTeam),
+        orderBy("timestamp", "desc")
+    );
+
+    getDocs(q).then(snapshot => {
+        const notificationsBtn = qs("#notifications-btn");
+        const notificationPanel = qs("#notification-panel");
+
+        if (snapshot.empty) {
+            if (notificationsBtn) {
+                notificationsBtn.classList.remove("has-notification");
+                notificationsBtn.textContent = "Notifications";
+            }
+
+            if (notificationPanel) {
+                notificationPanel.innerHTML = "<p>No notifications.</p>";
+            }
+            return;
+        }
+
+        if (notificationsBtn) {
+            notificationsBtn.classList.add("has-notification");
+            notificationsBtn.textContent = `Notifications (${snapshot.size})`;
+        }
+
+        if (notificationPanel) {
+            const notifications = [];
+            snapshot.forEach(doc => {
+                notifications.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            notifications.sort((a, b) => {
+                const timeA = a.timestamp || 0;
+                const timeB = b.timestamp || 0;
+                return timeB - timeA;
+            });
+
+            renderNotifications(notificationPanel, notifications);
+        }
+    }).catch(error => {
+        console.error("Error updating notifications:", error);
+    });
+}
 
 /* scorekeeping */
 async function calculatePoints() {
@@ -1361,6 +1534,13 @@ async function calculateFinalScores() {
 
 /* card management */
 async function assignResourceCard(teamId, resourceType, amount) {
+    const isAssigningToSelf = teamId === teamColor;
+
+    if (!isAssigningToSelf && !forceSeniorRoleCheck()) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+
     try {
         const teamRef = doc(db, "teams", teamId);
         const teamSnap = await getDoc(teamRef);
@@ -1385,11 +1565,14 @@ async function assignResourceCard(teamId, resourceType, amount) {
         } else {
             message = `You received ${amount} ${resourceType} card!`;
         }
-        if (isSenior) {
+        if (isSenior && !isAssigningToSelf) {
             displayMessage("Success");
         }
         await addNotification(teamId, message);
-        await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to Team ${teamId}`);
+
+        if (!isAssigningToSelf) {
+            await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to Team ${teamId}`);
+        }
     } catch (err) {
         console.error("Error assigning resource card:", err);
     }
@@ -1452,6 +1635,7 @@ async function removeResourceCard(teamId, resourceType, amount) {
         if (isSenior) {
             displayMessage("Success");
         }
+
         await addNotification(teamId, `You lost ${amount} ${resourceType} cards.`);
         await addNotification(seniorRole, `${amount} ${resourceType} card(s) removed from Team ${teamId}`);
     } catch (err) {
@@ -1611,7 +1795,8 @@ async function startNewGame() {
 
 async function endGame() {
     try {
-        if (!isSenior) {
+
+        if (!forceSeniorRoleCheck()) {
             displayMessage("Only seniors can end the game");
             return;
         }
@@ -1621,16 +1806,48 @@ async function endGame() {
             return;
         }
 
-        const confirmationContainer = qs("#end-game-confirmation-container");
-        if (confirmationContainer) {
-            confirmationContainer.classList.remove("hidden");
-            return;
-        } else {
-            displayMessage("Error: Could not find confirmation dialog");
-            return;
-        }
+        const modal = gen("div");
+        modal.id = "end-game-modal";
+        modal.classList.add("modal");
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>Confirm End Game</h3>
+                <p>Are you sure you want to end the current game? This action cannot be undone.</p>
+                <p>Type "end game" below to confirm:</p>
+                <input type="text" id="end-game-confirmation" placeholder="end game">
+                <div class="modal-buttons">
+                    <button id="confirm-end-game-btn">Confirm</button>
+                    <button id="cancel-end-game-btn">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const confirmBtn = qs("#confirm-end-game-btn");
+        const cancelBtn = qs("#cancel-end-game-btn");
+        const confirmInput = qs("#end-game-confirmation");
+
+        confirmBtn.disabled = true;
+
+        confirmInput.addEventListener("input", () => {
+            confirmBtn.disabled = confirmInput.value.toLowerCase() !== "end game";
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            document.body.removeChild(modal);
+        });
+
+        confirmBtn.addEventListener("click", () => {
+            if (confirmInput.value.toLowerCase() === "end game") {
+                document.body.removeChild(modal);
+                confirmEndGameExecution();
+            }
+        });
+
     } catch (err) {
-        console.error("Error preparing to end game:", err);
+        console.error("Error in endGame function:", err);
         displayMessage("Error preparing to end game");
     }
 }
@@ -1684,38 +1901,33 @@ async function confirmEndGameExecution() {
     }
 }
 
-/* notifications */
-async function createCompositeIndex() {
-    try {
-        const q = query(
-            notificationsCol,
-            where("team", "==", teamColor),
-            orderBy("timestamp", "desc")
-        );
+function addGameManagementEventListeners() {
 
-        await getDocs(q);
-        return q;
+    const startNewGameBtn = qs("#start-new-game-btn");
+    if (startNewGameBtn) {
+        startNewGameBtn.addEventListener("click", startNewGame);
+    } else {
+    }
 
-    } catch (error) {
-        if (error.code === 'failed-precondition' && error.message.includes('index')) {
-            console.error("Missing composite index. Please create it in the Firebase console.");
+    const endGameBtn = qs("#end-game-btn");
+    if (endGameBtn) {
+        const newEndGameBtn = endGameBtn.cloneNode(true);
+        endGameBtn.parentNode.replaceChild(newEndGameBtn, endGameBtn);
 
-            const urlMatch = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
-            if (urlMatch) {
-                displayMessage("Notifications are being configured. Please try again in a few minutes.");
-
-                return query(
-                    notificationsCol,
-                    where("team", "==", teamColor)
-                );
-            }
-        }
-        throw error;
+        newEndGameBtn.addEventListener("click", function () {
+            endGame();
+        });
+    } else {
     }
 }
 
+/* notifications */
 function renderNotifications(notificationPanel, notifications) {
-    if (!notificationPanel) return;
+
+    if (!notificationPanel) {
+        console.error("Notification panel element not found");
+        return;
+    }
 
     notificationPanel.innerHTML = "";
 
@@ -1734,6 +1946,7 @@ function renderNotifications(notificationPanel, notifications) {
 
     notifications.forEach((note) => {
         let timeString = "";
+
         if (note.timestamp) {
             let date;
             if (typeof note.timestamp.toDate === "function") {
@@ -1744,14 +1957,18 @@ function renderNotifications(notificationPanel, notifications) {
                 date = new Date(note.timestamp);
             }
 
-            if (date instanceof Date && !isNaN(date) && window.formatRelativeTime) {
-                timeString = window.formatRelativeTime(date);
-                if (timeString.includes("about")) {
-                    timeString = timeString.replace("about ", "");
+            if (date instanceof Date && !isNaN(date)) {
+                if (typeof window.formatRelativeTime === "function") {
+                    timeString = window.formatRelativeTime(date);
+                    if (timeString.includes("about")) {
+                        timeString = timeString.replace("about ", "");
+                    }
+                    timeString += " ago";
+                } else {
+                    timeString = date.toLocaleString();
                 }
-                timeString += " ago";
             } else {
-                timeString = new Date(note.timestamp).toLocaleString();
+                timeString = "Unknown time";
             }
         }
 
@@ -1783,6 +2000,8 @@ function renderNotifications(notificationPanel, notifications) {
     });
 
     notificationPanel.appendChild(notificationsContainer);
+
+    addClearAllNotificationsButton();
 }
 
 async function listenForNotifications() {
@@ -1791,19 +2010,22 @@ async function listenForNotifications() {
         return;
     }
 
-    if (isSenior) {
-        teamColor = seniorRole;
-    }
+    const targetTeam = isSenior ? seniorRole : teamColor;
 
     let q;
     try {
-        q = await createCompositeIndex();
+        q = query(
+            notificationsCol,
+            where("team", "==", targetTeam),
+            orderBy("timestamp", "desc")
+        );
+
+        await getDocs(q);
     } catch (error) {
         console.error("Error setting up notifications query:", error);
-        q = query(notificationsCol, where("team", "==", teamColor));
 
-
-        displayMessage("There was an issue loading notifications in order. Loading in default order instead.");
+        q = query(notificationsCol, where("team", "==", targetTeam));
+        displayMessage("Loading notifications in default order - newest may not show first");
     }
 
     const notificationsBtn = qs("#notifications-btn");
@@ -1833,6 +2055,12 @@ async function listenForNotifications() {
                 });
             });
 
+            notifications.sort((a, b) => {
+                const timeA = a.timestamp || 0;
+                const timeB = b.timestamp || 0;
+                return timeB - timeA;
+            });
+
             renderNotifications(notificationPanel, notifications);
         }
     });
@@ -1845,8 +2073,8 @@ async function addNotification(team, message) {
     }
 
     const notificationKey = `${team}-${message}`;
-
     const now = Date.now();
+
     if (recentNotifications.has(notificationKey)) {
         const lastTime = recentNotifications.get(notificationKey);
         if (now - lastTime < 3000) {
@@ -2294,8 +2522,6 @@ async function deleteDevCard(cardType) {
         const usedCard = cards.splice(index, 1);
 
         await updateDoc(teamRef, { development_cards: cards });
-        displayMessage(`Success!`);
-        await addNotification(teamColor, `You used a ${usedCard} development card.`);
         await addNotification(seniorRole, `Team ${teamColor} used a ${usedCard} development card.`);
 
         showPersonalHand();
@@ -2308,6 +2534,7 @@ async function deleteDevCard(cardType) {
 
 async function useRobber() {
     const hasRobberCard = await hasDevCard("Robber");
+
     if (!hasRobberCard) {
         displayMessage("You don't have a Robber card to use!");
         showPage("personal-hand", false);
@@ -2322,71 +2549,119 @@ async function useRobber() {
         return;
     }
 
-    const teamDocRef = doc(db, "teams", selectedTeam);
-    const teamDoc = await getDoc(teamDocRef);
+    try {
 
-    if (!teamDoc.exists()) {
-        displayMessage("Selected team does not exist.");
-        return;
-    }
+        const teamDocRef = doc(db, "teams", selectedTeam);
+        const teamDoc = await getDoc(teamDocRef);
 
-    const data = teamDoc.data();
-    const availableResources = [];
-
-    ["grain", "wool", "brick", "lumber"].forEach(resource => {
-        if ((data[resource] || 0) > 0) {
-            availableResources.push(resource);
+        if (!teamDoc.exists()) {
+            displayMessage("Selected team does not exist.");
+            return;
         }
-    });
 
-    if (availableResources.length === 0) {
-        displayMessage(`${selectedTeam} has no resources to steal.`);
-        return;
+        const data = teamDoc.data();
+        const availableResources = [];
+
+        ["grain", "wool", "brick", "lumber"].forEach(resource => {
+            if ((data[resource] || 0) > 0) {
+                availableResources.push(resource);
+            }
+        });
+
+        if (availableResources.length === 0) {
+            displayMessage(`${selectedTeam} has no resources to steal.`);
+            return;
+        }
+
+        const stolen = availableResources[Math.floor(Math.random() * availableResources.length)];
+
+        const robberTeamRef = doc(db, "teams", teamColor);
+        const robberDoc = await getDoc(robberTeamRef);
+
+        if (!robberDoc.exists()) {
+            displayMessage("Your team data could not be found.");
+            return;
+        }
+
+        const robberData = robberDoc.data();
+
+        const updates = {};
+        updates[stolen] = (robberData[stolen] || 0) + 1;
+
+        const victimUpdate = {};
+        victimUpdate[stolen] = data[stolen] - 1;
+
+        await updateDoc(robberTeamRef, updates);
+
+        await updateDoc(teamDocRef, victimUpdate);
+
+        await addNotification(teamColor, `You stole 1 ${stolen} from ${selectedTeam}.`);
+        await addNotification(selectedTeam, `${teamColor} stole 1 ${stolen} from you.`);
+        await addNotification(seniorRole, `${teamColor} stole 1 ${stolen} from ${selectedTeam}`);
+
+        await deleteDevCard("Robber");
+
+        displayMessage(`Successfully stole 1 ${stolen} from Team ${selectedTeam}!`);
+
+        setTimeout(() => {
+            showPage("personal-hand");
+        }, 1500);
+
+    } catch (err) {
+        console.error("Error using Robber card:", err);
+        displayMessage("Error processing Robber card. Please try again.");
     }
-
-    const stolen = availableResources[Math.floor(Math.random() * availableResources.length)];
-
-    const robberTeamRef = doc(db, "teams", teamColor);
-    const [robberDoc] = await Promise.all([getDoc(robberTeamRef)]);
-    if (!robberDoc.exists()) {
-        displayMessage("You don't have a robber card.");
-        return;
-    }
-    const robberData = robberDoc.data();
-
-    const updates = {};
-    updates[stolen] = (robberData[stolen] || 0) + 1;
-
-    const victimUpdate = {};
-    victimUpdate[stolen] = data[stolen] - 1;
-
-    await updateDoc(robberTeamRef, updates);
-    await updateDoc(teamDocRef, victimUpdate);
-    await addNotification(teamColor, `You stole 1 ${stolen} from ${selectedTeam}.`);
-    await addNotification(selectedTeam, `${teamColor} stole 1 ${stolen} from you.`);
-    await addNotification(seniorRole, `${teamColor} stole 1 ${stolen} from ${selectedTeam}`);
-    await deleteDevCard("Robber");
 }
 
 async function useChoose2Resources() {
+    if (isSenior) {
+        displayMessage("What are you doing? Aren't you a senior?");
+        return;
+    }
+
     const hasChoose2Card = await hasDevCard("Choose 2 Resources");
+
     if (!hasChoose2Card) {
         displayMessage("You don't have a Choose 2 Resources card to use!");
         showPage("personal-hand", false);
         return;
     }
 
-    const resource1 = qs("#choose-2-resource1").value;
-    const resource2 = qs("#choose-2-resource2").value;
+    const resource1Select = qs("#choose-2-resource1");
+    const resource2Select = qs("#choose-2-resource2");
+    const resource1 = resource1Select ? resource1Select.value : "";
+    const resource2 = resource2Select ? resource2Select.value : "";
 
-    await assignResourceCard(teamColor, resource1, 1);
-    await assignResourceCard(teamColor, resource2, 1);
-    await deleteDevCard("Choose 2 Resources");
+    if (!resource1 || !resource2) {
+        displayMessage("Please select both resources.");
+        return;
+    }
+
+    try {
+        await assignResourceCard(teamColor, resource1, 1);
+
+        await assignResourceCard(teamColor, resource2, 1);
+
+        await deleteDevCard("Choose 2 Resources");
+
+        displayMessage(`Successfully received 1 ${resource1} and 1 ${resource2}!`);
+
+        setTimeout(() => {
+            showPage("personal-hand");
+        }, 1500);
+
+    } catch (err) {
+        console.error("Error using Choose 2 Resources card:", err);
+        displayMessage("Error processing Choose 2 Resources card. Please try again.");
+    }
 }
 
 function updateRobberPage() {
     const robberCardContainer = qs("#robber-card-container");
-    if (!robberCardContainer) return;
+    if (!robberCardContainer) {
+        console.error("Robber card container not found!");
+        return;
+    }
 
     robberCardContainer.innerHTML = "";
 
@@ -2404,13 +2679,29 @@ function updateRobberPage() {
 
     robberCard.appendChild(cardImg);
     robberCard.appendChild(cardDescription);
-
     robberCardContainer.appendChild(robberCard);
+
+    setTimeout(() => {
+        fixRobberButtonListener();
+
+        const targetDropdown = qs("#robber-target-team");
+        if (targetDropdown) {
+            targetDropdown.addEventListener("change", () => {
+                const btn = qs("#submit-robber-request");
+                if (btn) {
+                    btn.disabled = !targetDropdown.value;
+                }
+            });
+        }
+    }, 100);
 }
 
 function updateChoose2ResourcesPage() {
     const choose2CardContainer = qs("#choose-2-card-container");
-    if (!choose2CardContainer) return;
+    if (!choose2CardContainer) {
+        console.error("Choose 2 Resources card container not found!");
+        return;
+    }
 
     choose2CardContainer.innerHTML = "";
 
@@ -2428,32 +2719,151 @@ function updateChoose2ResourcesPage() {
 
     choose2Card.appendChild(cardImg);
     choose2Card.appendChild(cardDescription);
-
     choose2CardContainer.appendChild(choose2Card);
+
+    const submitButton = qs("#submit-choose-2-request");
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+
+    setTimeout(() => {
+        fixChoose2ButtonListener();
+
+        const resource1Dropdown = qs("#choose-2-resource1");
+        const resource2Dropdown = qs("#choose-2-resource2");
+
+        function updateButtonState() {
+            const res1 = resource1Dropdown ? resource1Dropdown.value : "";
+            const res2 = resource2Dropdown ? resource2Dropdown.value : "";
+
+            const btn = qs("#submit-choose-2-request");
+            if (btn) {
+                btn.disabled = !(res1 && res2);
+            }
+        }
+
+        if (resource1Dropdown) {
+            resource1Dropdown.addEventListener("change", updateButtonState);
+        }
+
+        if (resource2Dropdown) {
+            resource2Dropdown.addEventListener("change", updateButtonState);
+        }
+
+        updateButtonState();
+    }, 100);
 }
 
-async function hasDevCard(cardType) {
-    try {
-        if (!teamColor) {
-            console.warn("Cannot check for cards - no team color found");
-            return false;
+function fixRobberButtonListener() {
+    const submitRobberRequestBtn = qs("#submit-robber-request");
+
+    if (!submitRobberRequestBtn) {
+        console.error("Robber button not found!");
+        return;
+    }
+
+    const newBtn = submitRobberRequestBtn.cloneNode(true);
+    submitRobberRequestBtn.parentNode.replaceChild(newBtn, submitRobberRequestBtn);
+
+    const robberSelect = qs("#robber-target-team");
+    if (robberSelect && robberSelect.value) {
+        newBtn.disabled = false;
+    }
+
+    newBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        useRobber();
+    });
+
+    const targetDropdown = qs("#robber-target-team");
+    if (targetDropdown) {
+        targetDropdown.addEventListener("change", () => {
+            const btn = qs("#submit-robber-request");
+            if (btn) {
+                btn.disabled = !targetDropdown.value;
+            }
+        });
+    }
+}
+
+function fixChoose2ButtonListener() {
+    const submitChoose2RequestBtn = qs("#submit-choose-2-request");
+    if (submitChoose2RequestBtn) {
+        const newBtn = submitChoose2RequestBtn.cloneNode(true);
+        submitChoose2RequestBtn.parentNode.replaceChild(newBtn, submitChoose2RequestBtn);
+
+        newBtn.addEventListener("click", function () {
+            useChoose2Resources();
+        });
+    }
+}
+
+function removeChoose2ButtonSetup() {
+    const res1 = qs("#choose-2-resource1");
+    const res2 = qs("#choose-2-resource2");
+    const choose2Btn = qs("#submit-choose-2-request");
+
+    if (res1) {
+        const newRes1 = res1.cloneNode(true);
+        res1.parentNode.replaceChild(newRes1, res1);
+    }
+
+    if (res2) {
+        const newRes2 = res2.cloneNode(true);
+        res2.parentNode.replaceChild(newRes2, res2);
+    }
+
+    if (choose2Btn) {
+        const newBtn = choose2Btn.cloneNode(true);
+        newBtn.disabled = true;
+        choose2Btn.parentNode.replaceChild(newBtn, choose2Btn);
+
+        newBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            useChoose2Resources();
+        });
+    }
+
+    function updateButtonState() {
+        const currentRes1 = qs("#choose-2-resource1");
+        const currentRes2 = qs("#choose-2-resource2");
+        const currentBtn = qs("#submit-choose-2-request");
+
+        if (currentRes1 && currentRes2 && currentBtn) {
+            const val1 = currentRes1.value;
+            const val2 = currentRes2.value;
+            currentBtn.disabled = !(val1 && val2);
         }
+    }
 
-        const teamRef = doc(db, "teams", teamColor);
-        const teamSnap = await getDoc(teamRef);
+    const currentRes1 = qs("#choose-2-resource1");
+    const currentRes2 = qs("#choose-2-resource2");
 
-        if (!teamSnap.exists()) {
-            console.error("Team not found in database");
-            return false;
+    if (currentRes1) {
+        currentRes1.addEventListener("change", updateButtonState);
+    }
+
+    if (currentRes2) {
+        currentRes2.addEventListener("change", updateButtonState);
+    }
+
+    updateButtonState();
+}
+
+function resetChoose2ButtonOnPageLoad() {
+    const btn = qs("#submit-choose-2-request");
+    if (btn) {
+        btn.disabled = true;
+    } else {
+    }
+
+    const res1 = qs("#choose-2-resource1");
+    const res2 = qs("#choose-2-resource2");
+
+    if (res1 && res2 && res1.value && res2.value) {
+        if (btn) {
+            btn.disabled = false;
         }
-
-        const data = teamSnap.data();
-        const cards = data.development_cards || [];
-
-        return cards.includes(cardType);
-    } catch (err) {
-        console.error("Error checking for dev card:", err);
-        return false;
     }
 }
 
@@ -2621,58 +3031,202 @@ function showGameOverMenu() {
     if (nav) nav.classList.add("hidden");
 }
 
-function setupSimplifiedEndGame() {
-    const endGameBtn = qs("#end-game-btn");
-    if (!endGameBtn) {
-        console.error("Could not find end game button");
+function integrateCardFixes() {
+    initCardPageEventListeners();
+
+    window.addEventListener("hashchange", function () {
+        const hash = location.hash.substring(1);
+
+        if (hash === "use-robber" || hash === "use-choose-2-resources") {
+            setTimeout(() => {
+                setDropdownDefaults();
+
+                if (hash === "use-robber") {
+                    const robberBtn = qs("#submit-robber-request");
+                    if (robberBtn) robberBtn.disabled = true;
+                } else if (hash === "use-choose-2-resources") {
+                    const choose2Btn = qs("#submit-choose-2-request");
+                    if (choose2Btn) choose2Btn.disabled = true;
+                }
+            }, 50);
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const hash = location.hash.substring(1);
+
+        if (hash === "use-robber" || hash === "use-choose-2-resources") {
+            setTimeout(() => {
+                setDropdownDefaults();
+
+                if (hash === "use-robber") {
+                    const robberBtn = qs("#submit-robber-request");
+                    if (robberBtn) robberBtn.disabled = true;
+                } else if (hash === "use-choose-2-resources") {
+                    const choose2Btn = qs("#submit-choose-2-request");
+                    if (choose2Btn) choose2Btn.disabled = true;
+                }
+            }, 50);
+        }
+    });
+}
+
+integrateCardFixes();
+
+/* don't let people do stuff they're not supposed to */
+async function hasDevCard(cardType) {
+    try {
+        if (!teamColor) {
+            console.warn("Cannot check for cards - no team color found");
+            return false;
+        }
+
+        const teamRef = doc(db, "teams", teamColor);
+        const teamSnap = await getDoc(teamRef);
+
+        if (!teamSnap.exists()) {
+            console.error("Team not found in database");
+            return false;
+        }
+
+        const data = teamSnap.data();
+        const cards = data.development_cards || [];
+
+        return cards.includes(cardType);
+    } catch (err) {
+        console.error("Error checking for dev card:", err);
+        return false;
+    }
+}
+
+function forceVerifyUserRole() {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+    ensureSeniorStatusIsSynchronized();
+    return userIsSenior;
+}
+
+function ensureSeniorStatusIsSynchronized() {
+    const isSeniorFromStorage = localStorage.getItem("isSenior") === "true";
+
+    if (isSeniorFromStorage !== isSenior) {
+        if (isSeniorFromStorage) {
+            isSenior = true;
+        }
+        else if (isSenior) {
+            localStorage.setItem("isSenior", "true");
+        }
+    }
+
+    if (isSeniorFromStorage || isSenior) {
+        if (teamColor) {
+            teamColor = "";
+        }
+        if (localStorage.getItem("teamColor")) {
+            localStorage.removeItem("teamColor");
+        }
+    }
+}
+
+const originalAssignResourceCard = assignResourceCard;
+assignResourceCard = function (teamId, resourceType, amount) {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (teamId === teamColor && !userIsSenior) {
+        return originalAssignResourceCard(teamId, resourceType, amount);
+    }
+
+    if (userIsSenior) {
+        return originalAssignResourceCard(teamId, resourceType, amount);
+    }
+
+    displayMessage("Bro, you're not a senior.");
+    return;
+};
+
+const originalAssignDevCard = assignDevCard;
+assignDevCard = function (teamId, cardType) {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (!userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+    return originalAssignDevCard(teamId, cardType);
+};
+
+const originalRemoveResourceCard = removeResourceCard;
+removeResourceCard = function (teamId, resourceType, amount) {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (!userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+    return originalRemoveResourceCard(teamId, resourceType, amount);
+};
+
+const originalRemoveDevCard = removeDevCard;
+removeDevCard = function (teamId, cardType) {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (!userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+    return originalRemoveDevCard(teamId, cardType);
+};
+
+const originalStartNewGame = startNewGame;
+startNewGame = function () {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (!userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+    return originalStartNewGame();
+};
+
+const originalEndGame = endGame;
+endGame = function () {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (!userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+    return originalEndGame();
+};
+
+const originalSubmitTradeRequest = submitTradeRequest;
+submitTradeRequest = function () {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (userIsSenior) {
+        displayMessage("What are you doing? Aren't you a senior?");
         return;
     }
 
-    const newBtn = endGameBtn.cloneNode(true);
-    endGameBtn.parentNode.replaceChild(newBtn, endGameBtn);
+    return originalSubmitTradeRequest();
+};
 
-    newBtn.addEventListener("click", function () {
-        if (!isSenior) {
-            displayMessage("Only seniors can end the game");
-            return;
-        }
+const originalUseRobber = useRobber;
+useRobber = function () {
+    if (isSenior) {
+        displayMessage("What are you doing? Aren't you a senior?");
+        return;
+    }
+    return originalUseRobber();
+};
 
-        if (!isGameActive) {
-            displayMessage("No active game to end");
-            return;
-        }
-
-        const confirmText = window.prompt(
-            "WARNING: This will end the current game and display final scores. This action cannot be undone.\n\n" +
-            "Type 'end game' to confirm:"
-        );
-
-        if (confirmText === null) {
-            displayMessage("Game end cancelled");
-            return;
-        }
-
-        if (confirmText.toLowerCase() !== "end game") {
-            displayMessage("Game end cancelled. You must type 'end game' exactly to confirm.");
-            return;
-        }
-
-        confirmEndGameExecution()
-            .then(() => {
-                const homeBtn = qs("#home-btn");
-                if (homeBtn) {
-                    const originalClick = homeBtn.onclick;
-                    homeBtn.onclick = function (e) {
-                        if (originalClick) originalClick.call(this, e);
-                    };
-                }
-            })
-            .catch(err => {
-                console.error("Error ending game:", err);
-                displayMessage("Error ending game. Please try again.");
-            });
-    });
-}
+const originalUseChoose2Resources = useChoose2Resources;
+useChoose2Resources = function () {
+    if (isSenior) {
+        displayMessage("What are you doing? Aren't you a senior?");
+        return;
+    }
+    return originalUseChoose2Resources();
+};
 
 /* setup */
 wholePageEvenListeners();
@@ -2694,6 +3248,8 @@ function setupGameManagement() {
 }
 
 function setupHamburgerMenu() {
+    forceSeniorRoleCheck();
+
     const menuToggle = document.querySelector("#menu-toggle");
     const nav = document.querySelector("nav");
 
@@ -2835,7 +3391,117 @@ function navSetup() {
     setupHamburgerMenu();
 }
 
+let accessDeniedMessageShown = false;
+function checkPageAccess(pageId) {
+    if (accessDeniedMessageShown) {
+        accessDeniedMessageShown = false;
+        return false;
+    }
+
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+    const seniorOnlyPages = [
+        "senior-see-hands",
+        "senior-manage-game"
+    ];
+    const teamOnlyPages = [
+        "personal-hand",
+        "manage-trades"
+    ];
+
+    if (pageId === "use-robber" || pageId === "use-choose-2-resources") {
+        if (userIsSenior) {
+            displayMessage("What are you doing? Aren't you a senior?");
+            accessDeniedMessageShown = true;
+            return false;
+        }
+        return true;
+    }
+
+    if (seniorOnlyPages.includes(pageId) && !userIsSenior) {
+        displayMessage("Bro, you're not a senior.");
+        accessDeniedMessageShown = true;
+        return false;
+    }
+
+    if (teamOnlyPages.includes(pageId) && userIsSenior) {
+        displayMessage("What are you doing? Aren't you a senior?");
+        accessDeniedMessageShown = true;
+        return false;
+    }
+
+    return true;
+}
+
+function enhanceHashChangeListener() {
+    let lastValidHash = location.hash.substring(1) || "home";
+
+    window.addEventListener("hashchange", function (e) {
+        const newPageId = location.hash.substring(1);
+        const commonPages = ["login", "loading", "home", "game-over"];
+
+        if (!commonPages.includes(newPageId) && !checkPageAccess(newPageId)) {
+            e.preventDefault();
+            const safePage = isGameActive ? "home" : "game-over";
+            history.replaceState({ pageId: safePage }, "", `#${safePage}`);
+
+            return;
+        }
+
+        lastValidHash = newPageId;
+    }, true);
+}
+
+function setupNavigationSecurely() {
+    document.querySelectorAll("nav li").forEach(item => {
+        const pageId = item.id.replace("-btn", "");
+
+        if (pageId && pageId !== "logout") {
+            item.addEventListener("click", function (e) {
+                const seniorOnlyPages = ["senior-see-hands", "senior-manage-game"];
+                const teamOnlyPages = ["personal-hand", "manage-trades", "#use-robber", "use-choose-2-resources"];
+
+                if ((seniorOnlyPages.includes(pageId) && !isSenior) ||
+                    (teamOnlyPages.includes(pageId) && isSenior)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (seniorOnlyPages.includes(pageId)) {
+                        displayMessage("Bro, you're not a senior.");
+                    } else {
+                        displayMessage("What are you doing? Aren't you a senior?");
+                    }
+
+                    const nav = qs("nav");
+                    if (nav) nav.classList.add("hidden");
+
+                    const openMenuBtn = qs(".menu-is-closed");
+                    const closeMenuBtn = qs(".menu-is-open");
+                    if (openMenuBtn) openMenuBtn.classList.remove("hidden");
+                    if (closeMenuBtn) closeMenuBtn.classList.add("hidden");
+
+                    return false;
+                }
+            });
+        }
+    });
+}
+
+function forceSeniorRoleCheck() {
+    ensureSeniorStatusIsSynchronized();
+    const seniorFromStorage = localStorage.getItem("isSenior") === "true";
+
+    if (seniorFromStorage !== isSenior) {
+        isSenior = seniorFromStorage;
+    }
+
+    return isSenior;
+}
+
 async function setupAfterLogin() {
+    if (localStorage.getItem("isSenior") === "true" && !isSenior) {
+        isSenior = true;
+    }
+
     await checkGameActive().then(isGameActive => {
         if (!isGameActive) {
             const gameStateRef = doc(db, "game_state", "current");
@@ -2855,7 +3521,18 @@ async function setupAfterLogin() {
     });
 
     setupHamburgerMenu();
+    setupNavigationSecurely();
     listenForNotifications();
-
+    enhanceHashChangeListener();
     await loadDevCardDescriptions();
+    ensureSeniorStatusIsSynchronized();
+
+    if (isSenior) {
+        const seniorElements = document.querySelectorAll(".senior-only");
+        seniorElements.forEach(el => el.classList.remove("hidden"));
+    }
+
+    fixTradeButtonEventHandlers();
+    forceSeniorRoleCheck();
+    return Promise.resolve();
 }
