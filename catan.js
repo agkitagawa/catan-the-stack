@@ -2370,18 +2370,18 @@ async function handleTradeResponse(tradeId, accepted) {
 
 async function notifyTradeRequest(toTeam, fromTeam) {
     await addNotification(toTeam, `Team ${fromTeam} has requested a trade.`);
-    await addNotification(seniorRole, `Team ${fromTeam} requested a trade with ${toTeam}`);
+    await addNotification(seniorRole, `Team ${fromTeam} requested a trade with Team ${toTeam}`);
 }
 
 async function notifyTradeAccepted(fromTeam, toTeam) {
     await addNotification(fromTeam, `Team ${toTeam} accepted your trade request.`);
-    await addNotification(toTeam, `You accepted the trade request from ${fromTeam}.`);
+    await addNotification(toTeam, `You accepted the trade request from Team ${fromTeam}.`);
     await addNotification(seniorRole, `Team ${toTeam} accepted Team ${fromTeam}'s trade request`);
 }
 
 async function notifyTradeRejected(fromTeam, toTeam) {
-    await addNotification(fromTeam, `Your trade request to ${toTeam} was rejected.`);
-    await addNotification(toTeam, `You rejected the trade request from ${fromTeam}.`);
+    await addNotification(fromTeam, `Your trade request to Team ${toTeam} was rejected.`);
+    await addNotification(toTeam, `You rejected the trade request from Team ${fromTeam}.`);
     await addNotification(seniorRole, `Team ${toTeam} rejected Team ${fromTeam}'s trade request`);
 }
 
@@ -2569,7 +2569,7 @@ async function useRobber() {
         });
 
         if (availableResources.length === 0) {
-            displayMessage(`${selectedTeam} has no resources to steal.`);
+            displayMessage(`Team ${selectedTeam} has no resources to steal.`);
             return;
         }
 
@@ -2595,9 +2595,9 @@ async function useRobber() {
 
         await updateDoc(teamDocRef, victimUpdate);
 
-        await addNotification(teamColor, `You stole 1 ${stolen} from ${selectedTeam}.`);
-        await addNotification(selectedTeam, `${teamColor} stole 1 ${stolen} from you.`);
-        await addNotification(seniorRole, `${teamColor} stole 1 ${stolen} from ${selectedTeam}`);
+        await addNotification(teamColor, `You stole 1 ${stolen} from Team ${selectedTeam}.`);
+        await addNotification(selectedTeam, `Team ${teamColor} stole 1 ${stolen} from you.`);
+        await addNotification(seniorRole, `Team ${teamColor} stole 1 ${stolen} from Team ${selectedTeam}`);
 
         await deleteDevCard("Robber");
 
@@ -2639,12 +2639,14 @@ async function useChoose2Resources() {
 
     try {
         await assignResourceCard(teamColor, resource1, 1);
-
         await assignResourceCard(teamColor, resource2, 1);
-
         await deleteDevCard("Choose 2 Resources");
 
-        displayMessage(`Successfully received 1 ${resource1} and 1 ${resource2}!`);
+        if (resource1 === resource2) {
+            displayMessage(`Successfully received 2 ${resource1}!`);
+        } else {
+            displayMessage(`Successfully received 1 ${resource1} and 1 ${resource2}!`);
+        }
 
         setTimeout(() => {
             showPage("personal-hand");
