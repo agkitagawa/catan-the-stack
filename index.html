@@ -7,424 +7,413 @@
 -->
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Ditch Day 2025</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Doto:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
-    rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Cinzel&family=Doto:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
-  rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8" />
+    <title>Ditch Day 2025</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Doto:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Agdasima:wght@400;700&family=Cinzel&family=Doto:wght@100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#8a3112">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#8a3112">
 
-  <script src="utils.js"></script>
-  <script type="module" defer src="catan.js"></script>
-  <script type="module">
-    import { formatDistanceToNow } from 'https://cdn.skypack.dev/date-fns';
-  
-    window.formatRelativeTime = formatDistanceToNow;
-  </script>
+    <script src="utils.js"></script>
+    <script type="module" defer src="catan.js"></script>
+    <script type="module">
+        import { formatDistanceToNow } from 'https://cdn.skypack.dev/date-fns';
+
+        window.formatRelativeTime = formatDistanceToNow;
+    </script>
 </head>
 
 <body>
     <header>
         <div class="header-container">
-          <h1 id="home-btn">Catan: The Stack</h1>
-          <div id="menu-toggle">
-            <div class="menu-is-closed">
-                <div class="hamburger-line"></div>
-                <div class="hamburger-line"></div>
-                <div class="hamburger-line"></div>
-            </div>
-            <div class="menu-is-open hidden">
-                <div class="close-menu-btn">X</div>
-            </div>
+            <h1 id="home-btn">Catan: The Stack</h1>
+            <div id="menu-toggle">
+                <div class="menu-is-closed">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+                <div class="menu-is-open hidden">
+                    <div class="close-menu-btn">X</div>
+                </div>
             </div>
         </div>
         <nav class="hidden">
-          <ul>
-            <li id="notifications-btn">Notifications</li>
-            <li id="see-hand-btn">See Your Hand</li>
-            <li id="manage-trades-btn">Manage Trades</li>
-            <li id="senior-see-hands-btn" class="hidden">Hands</li>
-            <li id="senior-manage-game-btn" class="hidden">Manage Game</li>
-            <li id="logout-btn" class="hidden">Log Out</li>
-          </ul>
+            <ul>
+                <li id="notifications-btn">Notifications</li>
+                <li id="see-hand-btn">See Your Hand</li>
+                <li id="manage-trades-btn">Manage Trades</li>
+                <li id="senior-see-hands-btn" class="hidden">View All Hands</li>
+                <li id="senior-manage-game-btn" class="hidden">Manage Game</li>
+                <li id="logout-btn" class="hidden">Log Out</li>
+            </ul>
         </nav>
         <section id="message" class="hidden"></section>
     </header>
 
-  <main>
-    <section id="loading" class="page">
-      <section>
-        <h2>Loading</h2>
-      </section>
-    </section>
-
-    <section id="login" class="page hidden">
-      <section>
-        <h2>Log In</h2>
-        <form id="login-form">
-          <label>Email:
-            <input type="email" id="loginEmail" placeholder="Email" required />
-          </label>
-          <label>Password:
-            <input type="password" id="loginPassword" placeholder="Password" required />
-          </label>
-          <p id="missing-field-message" class="hidden"></p>
-          <button id="submit-login" type="submit">Submit</button>
-        </form>
-      </section>
-    </section>
-
-    <section id="home" class="hidden page">
-      <section>
-        <h2>Team Resources</h2>
-        <p id="leaderboard-last-updated" class="timestamp"></p>
-        <section id="team-resources">
-          <section class="team-hand">
-            <h3>Green</h3>
-            <p id="green-grain"></p>
-            <p id="green-wool"></p>
-            <p id="green-brick"></p>
-            <p id="green-lumber"></p>
-          </section>
-          <section class="team-hand">
-            <h3>Red</h3>
-            <p id="red-grain"></p>
-            <p id="red-wool"></p>
-            <p id="red-brick"></p>
-            <p id="red-lumber"></p>
-          </section>
-          <section class="team-hand">
-            <h3>Blue</h3>
-            <p id="blue-grain"></p>
-            <p id="blue-wool"></p>
-            <p id="blue-brick"></p>
-            <p id="blue-lumber"></p>
-          </section>
-          <section class="team-hand">
-            <h3>White</h3>
-            <p id="white-grain"></p>
-            <p id="white-wool"></p>
-            <p id="white-brick"></p>
-            <p id="white-lumber"></p>
-          </section>
-        </section>
-      </section>
-    </section>
-
-    <section id="personal-hand" class="hidden page">
-      <h2>See Your Hand</h2>
-      <p id="personal-hand-last-updated" class="timestamp"></p>
-      <section id="your-hand">
-        <h3>Development Cards</h3>
-        <section id="dev-cards-in-hand"></section>
-        <h3>Resources</h3>
-        <p id="grain"></p>
-        <p id="wool"></p>
-        <p id="brick"></p>
-        <p id="lumber"></p>
-      </section>
-    </section>
-
-    <section id="notifications" class="hidden page">
-        <h2>Notifications</h2>
-        <p id="notifications-last-updated" class="timestamp"></p>
-        <section id="notification-panel">You have no notifications.</section>
-      </section>
-
-    <section id="manage-trades" class="hidden page">
-        <h2>Trade Center</h2>
-        <p id="trade-requests-last-updated" class="timestamp"></p>
-        <section id="trade-request">
-          <h3>Request a Trade</h3>
-          <label>Team to Request From:
-            <select id="team-to-request-from" required></select>
-          </label>
-          <label>Resources to Request:
-            <section id="resources-to-request">
-                <label>Grain:
-                  <input id="request-grain" type="number" min="0" value="0" />
-                </label>
-                <label>Wool:
-                  <input id="request-wool" type="number" min="0" value="0" />
-                </label>
-                <label>Brick:
-                  <input id="request-brick" type="number" min="0" value="0" />
-                </label>
-                <label>Lumber:
-                  <input id="request-lumber" type="number" min="0" value="0" />
-                </label>
+    <main>
+        <section id="loading" class="page">
+            <section>
+                <h2>Loading</h2>
             </section>
-          </label>
-          <label>Resources to Offer:
-            <section id="resources-to-offer">
-                <label>Grain:
-                  <input id="offer-grain" type="number" min="0" value="0" />
+        </section>
+
+        <section id="login" class="page hidden">
+            <section>
+                <h2>Log In</h2>
+                <form id="login-form">
+                    <label>Email:
+                        <input type="email" id="loginEmail" placeholder="Email" required />
+                    </label>
+                    <label>Password:
+                        <input type="password" id="loginPassword" placeholder="Password" required />
+                    </label>
+                    <p id="missing-field-message" class="hidden"></p>
+                    <button id="submit-login" type="submit">Let's Go!</button>
+                </form>
+            </section>
+        </section>
+
+        <section id="home" class="hidden page">
+            <section>
+                <h2>Team Resources</h2>
+                <p id="leaderboard-last-updated" class="timestamp"></p>
+                <section id="team-resources">
+                    <section class="team-hand">
+                        <h3>Green</h3>
+                        <section id="green-resources" class="resources-container"></section>
+                    </section>
+                    <section class="team-hand">
+                        <h3>Red</h3>
+                        <section id="red-resources" class="resources-container"></section>
+                    </section>
+                    <section class="team-hand">
+                        <h3>Blue</h3>
+                        <section id="blue-resources" class="resources-container"></section>
+                    </section>
+                    <section class="team-hand">
+                        <h3>White</h3>
+                        <section id="white-resources" class="resources-container"></section>
+                    </section>
+                </section>
+            </section>
+        </section>
+
+        <section id="personal-hand" class="hidden page">
+            <h2>See Your Hand</h2>
+            <p id="personal-hand-last-updated" class="timestamp"></p>
+            <section id="your-hand">
+                <h3 id="personal-points">Your Points: 0</h3>
+
+                <h3>Development Cards</h3>
+                <section id="dev-cards-in-hand" class="cards-container"></section>
+
+                <h3 id="resource-header">Resources</h3>
+                <section id="resource-cards" class="resource-cards-container"></section>
+            </section>
+        </section>
+
+        <section id="notifications" class="hidden page">
+            <h2>Notifications</h2>
+            <p id="notifications-last-updated" class="timestamp"></p>
+            <section id="notification-panel"></section>
+        </section>
+
+        <section id="manage-trades" class="hidden page">
+            <h2>Trade Center</h2>
+            <p id="trade-requests-last-updated" class="timestamp"></p>
+            <section id="trade-request">
+                <h3>Request a Trade</h3>
+                <label>Team to Request From:
+                    <select id="team-to-request-from" required></select>
                 </label>
-                <label>Wool:
-                  <input id="offer-wool" type="number" min="0" value="0" />
+                <label>Resources to Request:
+                    <section id="resources-to-request">
+                        <label>Grain:
+                            <input id="request-grain" type="number" min="0" value="0" />
+                        </label>
+                        <label>Wool:
+                            <input id="request-wool" type="number" min="0" value="0" />
+                        </label>
+                        <label>Brick:
+                            <input id="request-brick" type="number" min="0" value="0" />
+                        </label>
+                        <label>Lumber:
+                            <input id="request-lumber" type="number" min="0" value="0" />
+                        </label>
+                    </section>
                 </label>
-                <label>Brick:
-                  <input id="offer-brick" type="number" min="0" value="0" />
+                <label>Resources to Offer:
+                    <section id="resources-to-offer">
+                        <label>Grain:
+                            <input id="offer-grain" type="number" min="0" value="0" />
+                        </label>
+                        <label>Wool:
+                            <input id="offer-wool" type="number" min="0" value="0" />
+                        </label>
+                        <label>Brick:
+                            <input id="offer-brick" type="number" min="0" value="0" />
+                        </label>
+                        <label>Lumber:
+                            <input id="offer-lumber" type="number" min="0" value="0" />
+                        </label>
+                    </section>
                 </label>
-                <label>Lumber:
-                  <input id="offer-lumber" type="number" min="0" value="0" />
-                </label>
+                <button id="submit-trade-request" disabled>Submit</button>
             </section>
-          </label>
-          <button id="submit-trade-request" disabled>Submit</button>
-        </section>
-      
-        <section id="respond-to-requests">
-          <h3>Respond to Trade Requests</h3>
-          <section id="trade-requests">
-            <p>No trade requests</p>
-          </section>
-        </section>
-      </section>
 
-    <section id="use-robber" class="hidden page">
-        <h2>Play Robber Card</h2>
-        <section id="robber-section">
-            <div class="dev-card">
-                <p>Robber</p>
-                <p>Steal one random resource from a team of your choice.</p>
-            </div>
-          <label>Team to Steal From:
-            <select id="robber-target-team" required></select>
-          </label>
-          <button id="submit-robber-request" disabled>Submit</button>
-        </section>
-      </section>
-
-    <section id="use-choose-2-resources" class="hidden page">
-        <h2>Play Choose 2 Resources Card</h2>
-        <section id="choose-2-section">
-            <p>Receive two resource cards of your choosing. They can be the same or different.</section>
-            <label>Resource 1:
-                <select id="choose-2-resource1" required>
-                    <option value="" disabled selected>Select a resource</option>
-                    <option value="grain">Grain</option>
-                    <option value="wool">Wool</option>
-                    <option value="brick">Brick</option>
-                    <option value="lumber">Lumber</option>
-                  </select>
-            </label>
-            <label>Resource 2:
-                <select id="choose-2-resource2" required>
-                    <option value="" disabled selected>Select a resource</option>
-                    <option value="grain">Grain</option>
-                    <option value="wool">Wool</option>
-                    <option value="brick">Brick</option>
-                    <option value="lumber">Lumber</option>
-                  </select>
-            </label>
-            <button id="submit-choose-2-request" disabled>Submit</button>
-        </section>
-    </section>
-
-    <section id="senior-see-hands" class="hidden page">
-        <h2>All Hands</h2>
-        <section id="senior-team-hands">
-            <section class="senior-team-hand">
-              <h3>Green</h3>
-              <h4>Development Cards</h4>
-              <section id="senior-green-dev-cards"></section>
-              <h4>Resources</h4>
-              <p id="senior-green-grain"></p>
-              <p id="senior-green-wool"></p>
-              <p id="senior-green-brick"></p>
-              <p id="senior-green-lumber"></p>
+            <section id="respond-to-requests">
+                <h3>Respond to Trade Requests</h3>
+                <section id="trade-requests">
+                    <p>No trade requests</p>
+                </section>
             </section>
-            <section class="senior-team-hand">
-              <h3>Red</h3>
-              <h4>Development Cards</h4>
-              <section id="senior-red-dev-cards"></section>
-              <h4>Resources</h4>
-              <p id="senior-red-grain"></p>
-              <p id="senior-red-wool"></p>
-              <p id="senior-red-brick"></p>
-              <p id="senior-red-lumber"></p>
+        </section>
+
+        <section id="use-robber" class="hidden page">
+            <h2>Play Robber Card</h2>
+            <section id="robber-section">
+                <div id="robber-card-container" class="card-display-container"></div>
+                <div class="target-selection">
+                    <label>Team to Steal From:
+                        <select id="robber-target-team" required></select>
+                    </label>
+                    <button id="submit-robber-request" disabled>Steal Resource</button>
+                </div>
             </section>
-            <section class="senior-team-hand">
-              <h3>Blue</h3>
-              <h4>Development Cards</h4>
-              <section id="senior-blue-dev-cards"></section>
-              <h4>Resources</h4>
-              <p id="senior-blue-grain"></p>
-              <p id="senior-blue-wool"></p>
-              <p id="senior-blue-brick"></p>
-              <p id="senior-blue-lumber"></p>
+        </section>
+
+        <section id="use-choose-2-resources" class="hidden page">
+            <h2>Play Choose 2 Resources Card</h2>
+            <section id="choose-2-section">
+                <div id="choose-2-card-container" class="card-display-container"></div>
+                <div class="resource-selection">
+                    <label>Resource 1:
+                        <select id="choose-2-resource1" required>
+                            <option value="" disabled selected>Select a resource</option>
+                            <option value="grain">Grain</option>
+                            <option value="wool">Wool</option>
+                            <option value="brick">Brick</option>
+                            <option value="lumber">Lumber</option>
+                        </select>
+                    </label>
+                    <label>Resource 2:
+                        <select id="choose-2-resource2" required>
+                            <option value="" disabled selected>Select a resource</option>
+                            <option value="grain">Grain</option>
+                            <option value="wool">Wool</option>
+                            <option value="brick">Brick</option>
+                            <option value="lumber">Lumber</option>
+                        </select>
+                    </label>
+                    <button id="submit-choose-2-request" disabled>Claim Resources</button>
+                </div>
             </section>
-            <section class="senior-team-hand">
-              <h3>White</h3>
-              <h4>Development Cards</h4>
-              <section id="senior-white-dev-cards"></section>
-              <h4>Resources</h4>
-              <p id="senior-white-grain"></p>
-              <p id="senior-white-wool"></p>
-              <p id="senior-white-brick"></p>
-              <p id="senior-white-lumber"></p>
+        </section>
+
+        <section id="senior-see-hands" class="hidden page">
+            <h2>All Hands</h2>
+            <section id="senior-team-hands">
+                <section class="senior-team-hand">
+                    <h3>Green</h3>
+                    <h4>Development Cards</h4>
+                    <section id="senior-green-dev-cards"></section>
+                    <h4>Resources</h4>
+                    <p id="senior-green-grain"></p>
+                    <p id="senior-green-wool"></p>
+                    <p id="senior-green-brick"></p>
+                    <p id="senior-green-lumber"></p>
+                </section>
+                <section class="senior-team-hand">
+                    <h3>Red</h3>
+                    <h4>Development Cards</h4>
+                    <section id="senior-red-dev-cards"></section>
+                    <h4>Resources</h4>
+                    <p id="senior-red-grain"></p>
+                    <p id="senior-red-wool"></p>
+                    <p id="senior-red-brick"></p>
+                    <p id="senior-red-lumber"></p>
+                </section>
+                <section class="senior-team-hand">
+                    <h3>Blue</h3>
+                    <h4>Development Cards</h4>
+                    <section id="senior-blue-dev-cards"></section>
+                    <h4>Resources</h4>
+                    <p id="senior-blue-grain"></p>
+                    <p id="senior-blue-wool"></p>
+                    <p id="senior-blue-brick"></p>
+                    <p id="senior-blue-lumber"></p>
+                </section>
+                <section class="senior-team-hand">
+                    <h3>White</h3>
+                    <h4>Development Cards</h4>
+                    <section id="senior-white-dev-cards"></section>
+                    <h4>Resources</h4>
+                    <p id="senior-white-grain"></p>
+                    <p id="senior-white-wool"></p>
+                    <p id="senior-white-brick"></p>
+                    <p id="senior-white-lumber"></p>
+                </section>
             </section>
-          </section>
-    </section>
-
-    <section id="senior-manage-cards" class="hidden page">
-      </section>
-
-      <section id="senior-manage-game" class="hidden page">
-        <section id="senior-manage-hands">
-        <h2>Manage Teams' Hands</h2>
-
-        <div>
-        <h3>Assign Resources</h3>
-        <section id="assign-resources-section">
-          <label>Team:
-            <select id="team-to-assign-resources" required>
-                <option value="" disabled selected>Select a team</option>
-                <option value="Green">Green</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="White">White</option>
-            </select>
-          </label>
-          <label>Resource:
-            <select id="resource-to-assign" required>
-                <option value="" disabled selected>Select a resource</option>
-              <option value="grain">Grain</option>
-              <option value="wool">Wool</option>
-              <option value="brick">Brick</option>
-              <option value="lumber">Lumber</option>
-            </select>
-          </label>
-          <label>Amount:
-            <input id="amount-to-assign" type="number" min="1" max="10" value="1" />
-          </label>
-          <button id="submit-assign-resources" disabled>Submit</button>
-        </section>
-    </div>
-    <div>
-        <h3>Assign Random Development Card</h3>
-        <section id="assign-random-dev-cards-section">
-          <label>Team:
-            <select id="team-to-assign-random-dev-card" required>
-                <option value="" disabled selected>Select a team</option>
-                <option value="Green">Green</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="White">White</option>
-            </select>
-          </label>
-          <button id="submit-assign-random-dev-card" disabled>Submit</button>
-        </section>
-    </div>
-    <div>
-        <h3>Assign Specific Development Card</h3>
-        <section id="assign-specific-dev-cards-section">
-          <label>Team:
-            <select id="team-to-assign-specific-dev-card" required>
-                <option value="" disabled selected>Select a team</option>
-                <option value="Green">Green</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="White">White</option>
-            </select>
-          </label>
-          <label>Development Card:
-            <select id="dev-card-to-assign" required>
-                <option value="" disabled selected>Select a card</option>
-                <option value="Robber">Robber</option>
-                <option value="Victory Point">Victory Point</option>
-                <option value="Choose 2 Resources">Choose 2 Resources</option>
-            </select>
-          </label>
-          <button id="submit-assign-specific-dev-card" disabled>Submit</button>
-        </section>
-    </div>
-    <div>
-        <h3>Remove Resources</h3>
-        <section id="remove-resources-section">
-          <label>Team:
-            <select id="team-to-remove-resources" required>
-                <option value="" disabled selected>Select a team</option>
-                <option value="Green">Green</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="White">White</option>
-            </select>
-          </label>
-          <label>Resource:
-            <select id="resource-to-remove" required>
-                <option value="" disabled selected>Select a resource</option>
-              <option value="grain">Grain</option>
-              <option value="wool">Wool</option>
-              <option value="brick">Brick</option>
-              <option value="lumber">Lumber</option>
-            </select>
-          </label>
-          <label>Amount:
-            <input id="amount-to-remove" type="number" min="1" max="10" value="1" />
-          </label>
-          <button id="submit-remove-resources" disabled>Submit</button>
-        </section>
-    </div>
-    <div>
-        <h3>Remove Development Card</h3>
-        <section id="remove-dev-card-section">
-          <label>Team:
-            <select id="team-to-remove-dev-card" required>
-                <option value="" disabled selected>Select a team</option>
-                <option value="Green">Green</option>
-                <option value="Red">Red</option>
-                <option value="Blue">Blue</option>
-                <option value="White">White</option>
-            </select>
-          </label>
-          <label>Development Card:
-            <select id="dev-card-to-remove" required>
-                <option value="" disabled selected>Select a card</option>
-                <option value="Robber">Robber</option>
-                <option value="Victory Point">Victory Point</option>
-                <option value="Choose 2 Resources">Choose 2 Resources</option>
-            </select>
-          </label>
-          <button id="submit-remove-dev-card" disabled>Submit</button>
-        </section>
         </section>
 
-        <h2>Gameplay</h2>
-        <section id="game-management-controls">
-            <div id="game-status-message"></div>
-            <div>
-                <button id="start-new-game-btn">Start New Game</button>
-                <button id="end-game-btn" disabled>End Game</button>
-            </div>
-          <div id="end-game-confirmation-container" class="hidden">
-            <p class="warning-text">WARNING: This will end the current game and display final scores. This action cannot be undone.</p>
-            <p>To confirm, please type "end game" in the box below:</p>
-            <input type="text" id="end-game-confirmation-input" placeholder="Type 'end game' here">
-            <div class="confirmation-buttons">
-              <button id="confirm-end-game-btn">Confirm</button>
-              <button id="cancel-end-game-btn">Cancel</button>
-            </div>
-          </div>
-        </section>
-      </section>
+        <section id="senior-manage-game" class="hidden page">
+            <section id="senior-manage-hands">
+                <h2>Manage Teams' Hands</h2>
 
-      <section id="game-over" class="hidden page">
-        <h2 id="winner-announcement"></h2>
-        <section id="final-scores"></section>
-      </section>
-  </main>
+                <div>
+                    <h3>Assign Resources</h3>
+                    <section id="assign-resources-section">
+                        <label>Team:
+                            <select id="team-to-assign-resources" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <label>Resource:
+                            <select id="resource-to-assign" required>
+                                <option value="" disabled selected>Select a resource</option>
+                                <option value="grain">Grain</option>
+                                <option value="wool">Wool</option>
+                                <option value="brick">Brick</option>
+                                <option value="lumber">Lumber</option>
+                            </select>
+                        </label>
+                        <label>Amount:
+                            <input id="amount-to-assign" type="number" min="1" max="10" value="1" />
+                        </label>
+                        <button id="submit-assign-resources" disabled>Submit</button>
+                    </section>
+                </div>
+                <div>
+                    <h3>Assign Random Development Card</h3>
+                    <section id="assign-random-dev-cards-section">
+                        <label>Team:
+                            <select id="team-to-assign-random-dev-card" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <button id="submit-assign-random-dev-card" disabled>Submit</button>
+                    </section>
+                </div>
+                <div>
+                    <h3>Assign Specific Development Card</h3>
+                    <section id="assign-specific-dev-cards-section">
+                        <label>Team:
+                            <select id="team-to-assign-specific-dev-card" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <label>Development Card:
+                            <select id="dev-card-to-assign" required>
+                                <option value="" disabled selected>Select a card</option>
+                                <option value="Robber">Robber</option>
+                                <option value="Victory Point">Victory Point</option>
+                                <option value="Choose 2 Resources">Choose 2 Resources</option>
+                            </select>
+                        </label>
+                        <button id="submit-assign-specific-dev-card" disabled>Submit</button>
+                    </section>
+                </div>
+                <div>
+                    <h3>Remove Resources</h3>
+                    <section id="remove-resources-section">
+                        <label>Team:
+                            <select id="team-to-remove-resources" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <label>Resource:
+                            <select id="resource-to-remove" required>
+                                <option value="" disabled selected>Select a resource</option>
+                                <option value="grain">Grain</option>
+                                <option value="wool">Wool</option>
+                                <option value="brick">Brick</option>
+                                <option value="lumber">Lumber</option>
+                            </select>
+                        </label>
+                        <label>Amount:
+                            <input id="amount-to-remove" type="number" min="1" max="10" value="1" />
+                        </label>
+                        <button id="submit-remove-resources" disabled>Submit</button>
+                    </section>
+                </div>
+                <div>
+                    <h3>Remove Development Card</h3>
+                    <section id="remove-dev-card-section">
+                        <label>Team:
+                            <select id="team-to-remove-dev-card" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <label>Development Card:
+                            <select id="dev-card-to-remove" required>
+                                <option value="" disabled selected>Select a card</option>
+                                <option value="Robber">Robber</option>
+                                <option value="Victory Point">Victory Point</option>
+                                <option value="Choose 2 Resources">Choose 2 Resources</option>
+                            </select>
+                        </label>
+                        <button id="submit-remove-dev-card" disabled>Submit</button>
+                    </section>
+            </section>
+
+            <h2>Gameplay</h2>
+            <section id="game-management-controls">
+                <div id="game-status-message"></div>
+                <div>
+                    <button id="start-new-game-btn">Start New Game</button>
+                    <button id="end-game-btn" disabled>End Game</button>
+                </div>
+                <div id="end-game-confirmation-container" class="hidden">
+                    <p class="warning-text">WARNING: This will end the current game and display final scores. This
+                        action cannot be undone.</p>
+                    <p>To confirm, please type "end game" in the box below:</p>
+                    <input type="text" id="end-game-confirmation-input" placeholder="Type 'end game' here">
+                    <div class="confirmation-buttons">
+                        <button id="confirm-end-game-btn">Confirm</button>
+                        <button id="cancel-end-game-btn">Cancel</button>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section id="game-over" class="hidden page">
+            <h2 id="winner-announcement"></h2>
+            <section id="final-scores"></section>
+        </section>
+    </main>
 </body>
+
 </html>

@@ -4,7 +4,6 @@
 */
 
 :root {
-    /* Catan color palette */
     --green: #4CAF50;
     --green-light: #8BC34A;
     --blue: #2196F3;
@@ -22,14 +21,14 @@
     --sheep: #B2DFDB;
     --dark-text: #333333;
     --light-text: #FFFFFF;
-    --background: #71abde; 
+    --background: #71abde;
     --card-bg: #f4e7ca;
     --border-color: #886637;
-    --header-bg: #8a3112;  /* Slightly darker than the original #9d3814 */
+    --header-bg: #8a3112;
     --header-text: #d4af37;
     --gradient-top: #9d3814;
-    --button-bg: #5e1a07; 
-    --button-text: #f1e6c3; 
+    --button-bg: #5e1a07;
+    --button-text: #f1e6c3;
     --gradient-middle: #b17226;
     --gradient-bottom: #d4af37;
     --gradient-text: #e2cd88;
@@ -44,11 +43,11 @@
 html {
     height: 100%;
     overflow-x: hidden;
-    background: linear-gradient(to bottom, 
-        var(--gradient-top) 0%, 
-        var(--gradient-top) 80%, 
-        var(--gradient-middle) 90%, 
-        var(--gradient-bottom) 100%);
+    background: linear-gradient(to bottom,
+            var(--gradient-top) 0%,
+            var(--gradient-top) 80%,
+            var(--gradient-middle) 90%,
+            var(--gradient-bottom) 100%);
     background-attachment: fixed;
     position: relative;
 }
@@ -99,7 +98,7 @@ h1 {
 
 nav {
     display: flex;
-    justify-content: space-evenly; 
+    justify-content: space-evenly;
     padding-top: 0.5rem;
     overflow-x: auto;
     white-space: nowrap;
@@ -127,7 +126,7 @@ nav li {
     width: 100%;
     font-size: 1.2rem;
     padding: 0.5rem 4.5rem;
-  }
+}
 
 .container {
     max-width: 800px;
@@ -144,7 +143,7 @@ p {
     font-size: 0.95rem;
 }
 
-  #logout-btn {
+#logout-btn {
     background-color: var(--gradient-text);
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--dark-text);
@@ -152,20 +151,18 @@ p {
     border-radius: 1px;
     cursor: pointer;
     font-weight: bold;
-  }
-  
-  /* Main content */
-  main {
+}
+
+main {
     max-width: 100%;
     padding: 1rem;
-  }
-  
-  .page {
+}
+
+.page {
     margin-bottom: 2rem;
-  }
-  
-  /* Headings */
-  h2 {
+}
+
+h2 {
     font-family: 'Agdasima', sans-serif;
     color: var(--gradient-text);
     margin-bottom: 0.5rem;
@@ -173,98 +170,102 @@ p {
     padding-bottom: 0.5rem;
     font-size: 3rem;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.255);
-  }
-  
-  h3 {
+}
+
+h3 {
     color: var(--dark-text);
     margin: 1rem 0 0.5rem;
-  }
-  
-  /* Team resources section */
-  #team-resources {
+}
+
+#team-resources {
     display: flex;
     flex-direction: column;
     gap: 1rem;
     margin-top: 1rem;
-  }
-  
-  .team-hand h3, .senior-team-hand h3 {
-    font-size: 2.5rem;
-  }
+}
 
-  .team-hand, .senior-team-hand {
+.team-hand h3,
+.senior-team-hand h3 {
+    text-align: center;
+}
+
+.team-hand h3 {
+    font-size: 2.5rem;
+}
+
+.senior-team-hand h3 {
+    font-size: 1.4rem;
+}
+
+.senior-team-hand h4 {
+    font-size: 1rem;
+}
+
+.team-hand,
+.senior-team-hand {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 1.25rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     border-left: 5px solid;
     margin-bottom: 0.5rem;
-    width: 75vw;
     margin-left: auto;
     margin-right: auto;
     transition: transform 0.2s;
     font-size: 1.8rem;
-  }
+}
 
-  #your-hand {
+#your-hand {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 1.25rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     border-left: 5px solid;
     margin-bottom: 0.5rem;
-    width: 75vw;
+    width: 85vw;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  .team-hand h3 {
+}
+
+.team-hand h3 {
     margin-top: 0;
     margin-bottom: 0.75rem;
-  }
-  
-  /* Team colors */
-  .team-hand:nth-child(1), .senior-team-hand:nth-child(1), #your-hand.green {
+}
+
+.team-hand:nth-child(1),
+.senior-team-hand:nth-child(1),
+#your-hand.green {
     border-left: 15px solid var(--green);
-  }
-  
-  .team-hand:nth-child(2), .senior-team-hand:nth-child(2), #your-hand.red {
+}
+
+.team-hand:nth-child(2),
+.senior-team-hand:nth-child(2),
+#your-hand.red {
     border-left: 15px solid var(--red);
-  }
-  
-  .team-hand:nth-child(3), .senior-team-hand:nth-child(3), #your-hand.blue {
+}
+
+.team-hand:nth-child(3),
+.senior-team-hand:nth-child(3),
+#your-hand.blue {
     border-left: 15px solid var(--blue);
-  }
-  
-  .team-hand:nth-child(4), .senior-team-hand:nth-child(4), #your-hand.white {
+}
+
+.team-hand:nth-child(4),
+.senior-team-hand:nth-child(4),
+#your-hand.white {
     border-left: 15px solid var(--dark-text);
-  }
-  
-  /* Resource colors */
-  [id*="-grain"] {
-    color: var(--yellow);
-    font-weight: 500;
-  }
-  
-  [id*="-wool"] {
-    color: var(--green-light);
-    font-weight: 500;
-  }
-  
-  [id*="-brick"] {
-    color: var(--brick);
-    font-weight: 500;
-  }
-  
-  [id*="-lumber"] {
-    color: var(--wood);
-    font-weight: 500;
-  }
-  
-  /* Forms and inputs */
-  form, #trade-request, #respond-to-requests, #robber-section, #choose-2-section, #assign-resources-section,
-  #assign-random-dev-cards-section, #assign-specific-dev-cards-section,
-  #remove-resources-section, #remove-dev-card-section {
+}
+
+form,
+#trade-request,
+#respond-to-requests,
+#robber-section,
+#choose-2-section,
+#assign-resources-section,
+#assign-random-dev-cards-section,
+#assign-specific-dev-cards-section,
+#remove-resources-section,
+#remove-dev-card-section {
     background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
@@ -273,23 +274,24 @@ p {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  label {
+}
+
+label {
     display: block;
     margin-bottom: 1rem;
     font-weight: 500;
-  }
-  
-  input, select {
+}
+
+input,
+select {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     margin-top: 0.25rem;
-  }
-  
-  button {
+}
+
+button {
     margin-bottom: 1rem;
     background-color: var(--button-bg);
     color: var(--button-text);
@@ -303,28 +305,27 @@ p {
     margin-top: 0.2rem;
     font-size: 0.6rem;
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-  
-  button:disabled {
+}
+
+button:disabled {
     background-color: #cccccc;
     color: #a5a5a5;
     cursor: not-allowed;
-  }
+}
 
-  select {
+select {
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-  
-  /* Resources section in trade form */
-  #resources-to-request, #resources-to-offer {
+}
+
+#resources-to-request,
+#resources-to-offer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
     margin-top: 0.5rem;
-  }
-  
-  /* Development cards */
-  .dev-card {
+}
+
+.dev-card {
     background-color: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -332,28 +333,30 @@ p {
     margin-bottom: 1rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s;
-    width: 20vw;
     margin-left: auto;
     margin-right: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     min-height: 12vh;
-  }
-  
-  .dev-card p {
+}
+
+#your-hand .dev-card {
+    max-width: 45% !important;
+}
+
+.dev-card p {
+    width: 95%;
     margin-bottom: 0.5rem;
-  }
-  
-  .dev-card-description {
+}
+
+.dev-card-description {
     font-style: italic;
     color: #666;
     font-size: 0.9rem;
-  }
-  
-  /* Notifications */
-  .notifications-container {
+}
+
+.notifications-container {
     background-color: var(--card-bg);
     border-radius: 12px;
     overflow: hidden;
@@ -361,9 +364,9 @@ p {
     margin-left: auto;
     margin-right: auto;
     font-size: 0.7rem;
-  }
-  
-  .notification-header {
+}
+
+.notification-header {
     display: grid;
     grid-template-columns: 1fr auto auto;
     padding: 0.75rem 1rem;
@@ -371,21 +374,25 @@ p {
     color: white;
     background-color: var(--border-color);
     font-size: 1rem;
-  }
-  
-  .notification-row {
+}
+
+.notification-row {
     display: grid;
     grid-template-columns: 1fr auto auto;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
     align-items: center;
-  }
-  
-  .notification-row:last-child {
+}
+
+.notification-message {
+    margin-right: 0.5rem;
+}
+
+.notification-row:last-child {
     border-bottom: none;
-  }
-  
-  .notification-delete {
+}
+
+.notification-delete {
     background: none;
     border: none;
     color: var(--red);
@@ -394,10 +401,9 @@ p {
     padding: 0 0.5rem;
     margin: 0;
     box-shadow: none;
-  }
-  
-  /* Message display */
-  #message {
+}
+
+#message {
     position: fixed;
     bottom: 2rem;
     left: 50%;
@@ -413,20 +419,20 @@ p {
     justify-content: space-between;
     min-width: 50%;
     max-width: 90%;
-  }
+}
 
-  #message p {
+#message p {
     font-size: 0.7rem;
     margin: 0;
     flex: 1;
     text-align: left;
 }
 
-  .close-message-btn {
+.close-message-btn {
     box-shadow: none;
-  }
+}
 
-  .timestamp {
+.timestamp {
     color: var(--gradient-text);
     text-align: center;
     border-radius: 4px;
@@ -434,9 +440,9 @@ p {
     padding-left: 1rem;
     margin-bottom: 0.5rem;
     font-size: 0.5rem;
-  }
+}
 
-  #manage-trades h3 {
+#manage-trades h3 {
     background-color: var(--header-bg);
     color: var(--button-text);
     padding: 0.25rem 1.5rem;
@@ -447,21 +453,22 @@ p {
     margin-left: auto;
     margin-right: auto;
     font-size: 1.3rem;
-  }
+}
 
-  #senior-manage-game section:not(#game-management-controls) div {
+#senior-manage-game section:not(#game-management-controls) div {
     background-color: var(--card-bg);
     margin-left: 8vw;
     margin-right: 8vw;
+    margin-top: 2rem;
     padding-top: 0.2rem;
     padding-left: 1rem;
     padding-right: 1rem;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     margin-bottom: 1.5rem;
-  }
+}
 
-  #senior-manage-game h3 {
+#senior-manage-game h3 {
     background-color: var(--header-bg);
     color: var(--button-text);
     padding: 0.25rem 1.5rem;
@@ -472,15 +479,20 @@ p {
     margin-left: auto;
     margin-right: auto;
     font-size: 1.1rem;
-  }
+}
 
-  #senior-manage-game section section {
+#senior-manage-game section section {
     display: flex;
     flex-direction: column;
+    align-items: center;
     box-shadow: none;
-  }
-  
-  .close-message-btn {
+}
+
+#senior-manage-game section section label {
+    width: 100%;
+}
+
+.close-message-btn {
     background: none;
     border: none;
     color: white;
@@ -488,35 +500,34 @@ p {
     cursor: pointer;
     padding: 0 0.5rem;
     margin: 0;
-  }
+}
 
-  #game-management-controls div {
+#game-management-controls div {
     display: flex;
     justify-content: space-evenly;
-  }
+}
 
-  /* Trade section */
-  #trade-requests {
+#trade-requests {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 1.25rem;
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-  }
+}
 
-  #trade-request h3 {
+#trade-request h3 {
     width: 100%;
     text-align: left;
-  }
+}
 
-  #trade-request {
+#trade-request {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-  }
-  
-  .pending-trade-request {
+}
+
+.pending-trade-request {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.25rem;
@@ -526,44 +537,43 @@ p {
     display: flex;
     flex-direction: column;
     min-height: 12vh;
-  }
+}
 
-  .pending-trade-request p {
+.pending-trade-request p {
     margin-bottom: 0.1rem;
-  }
-  
-  .pending-trade-request:last-child {
+}
+
+.pending-trade-request:last-child {
     margin-bottom: 0;
-  }
-  
-  .pending-trade-request ul {
+}
+
+.pending-trade-request ul {
     list-style: none;
     margin-bottom: 1rem;
     text-align: center;
-  }
-  
-  .accept-trade {
+}
+
+.accept-trade {
     background-color: var(--green);
     color: var(--light-text);
     margin-right: 0.5rem;
     width: 100%;
-  }
-  
-  .reject-trade {
+}
+
+.reject-trade {
     color: var(--light-text);
     background-color: var(--red);
     width: 100%;
-  }
-  
-  .insufficient-resources {
+}
+
+.insufficient-resources {
     color: var(--red);
     font-size: 0.9rem;
     margin-top: 0.5rem;
     text-align: center;
-  }
-  
-  /* Game management */
-  #game-management-controls {
+}
+
+#game-management-controls {
     background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
@@ -571,59 +581,80 @@ p {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  #game-status-message {
+}
+
+#game-status-message {
     padding: 0.5rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     text-align: center;
     font-weight: bold;
-  }
+}
 
-  .active {
+.active {
     background-color: var(--green-light);
     color: var(--dark-text);
-  }
-  
-  .inactive {
+}
+
+.inactive {
     background-color: var(--red);
     color: var(--light-text);
-  }
+}
 
-  #start-new-game-btn:not(:disabled) {
+#start-new-game-btn:not(:disabled) {
     background-color: var(--green);
     color: var(--light-text);
     margin-right: 1rem;
-  }
-  
-  #end-game-btn:not(:disabled) {
+}
+
+#start-new-game-btn,
+#end-game-btn {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    width: 100%;
+}
+
+#end-game-btn:not(:disabled) {
     background-color: var(--red);
     color: var(--light-text);
-  }
-  
-  /* Game over */
-  #game-over {
+}
+
+#login-form {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+#submit-login {
+    width: 40%;
+}
+
+#login-form label {
+    width: 100%;
+}
+
+#game-over {
     text-align: center;
     padding: 2rem;
-  }
-  
-  #winner-announcement {
+}
+
+#winner-announcement {
     font-size: 2rem;
     margin-bottom: 2rem;
-    color: var(--brown);
-  }
-  
-  /* Final scores */
-  #final-scores {
+    color: var(--gradient-text);
+}
+
+#final-scores {
     display: flex;
     flex-direction: column;
     max-width: 500px;
     margin: 0 auto;
     gap: 1rem;
-  }
-  
-  .final-team-score {
+}
+
+.final-team-score {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -633,172 +664,300 @@ p {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     border-left: 5px solid;
     transition: transform 0.2s;
-    max-width: 600px;
+    width: 80%;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  .final-team-score.winner {
+    font-size: 1.2rem;
+}
+
+.final-team-score.winner {
     background-color: var(--yellow);
+    width: 100%;
     font-weight: bold;
-  }
-  
-  .team-final-points {
-    font-size: 1.25rem;
-    font-weight: bold;
-  }
-  
-  .points-breakdown {
+    font-size: 1.5rem;
+}
+
+.team-points {
+    display: flex;
+    flex-direction: column;
+    width: 45%;
+    font-size: 1rem;
+}
+
+.points-breakdown {
     font-size: 0.9rem;
     color: #666;
     margin-top: 0.25rem;
-  }
-  
-  /* Senior hands view */
-  #senior-team-hands {
+}
+
+#senior-team-hands {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    max-width: 600px;
+    max-width: 1000px;
+    margin-top: 2rem;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  .senior-team-hand {
+}
+
+.senior-team-hand {
     background-color: var(--card-bg);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     border-left: 5px solid;
     transition: transform 0.2s;
-  }
+}
 
-  /* End game confirmation */
-  #end-game-confirmation-container {
+#end-game-confirmation-container {
     margin-top: 1rem;
     background-color: rgba(244, 67, 54, 0.1);
     border: 1px solid var(--red);
     border-radius: 8px;
     padding: 1rem;
-  }
-  
-  .warning-text {
+}
+
+.warning-text {
     color: var(--red);
     font-weight: bold;
     margin-bottom: 0.5rem;
-  }
-  
-  .confirmation-buttons {
+}
+
+.confirmation-buttons {
     display: flex;
     gap: 1rem;
     margin-top: 1rem;
-  }
-  
-  #confirm-end-game-btn {
-    background-color: var(--red);
-  }
-  
-  /* Utility classes */
-  .hidden {
-    display: none !important;
-  }
-  
-  /* Team colors for game over */
-  #game-over.red {
-    background-color: rgba(244, 67, 54, 0.1);
-  }
-  
-  #game-over.green {
-    background-color: rgba(76, 175, 80, 0.1);
-  }
-  
-  #game-over.blue {
-    background-color: rgba(33, 150, 243, 0.1);
-  }
-  
-  #game-over.white {
-    background-color: rgba(245, 245, 245, 0.5);
-  }
-  
-  #game-over.tie {
-    background-color: rgba(255, 193, 7, 0.1);
-  }
-  
-  /* Mobile-specific adjustments */
-  @media (max-width: 768px) {
-    nav {
-        padding: 0.3rem 0;
-        white-space: nowrap;
-        overflow-x: auto;
-    }
-    
-    .container {
-        margin: 15px;
-    }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
 }
 
-    form, #trade-request, #robber-section, #choose-2-section, #assign-resources-section,
-    #assign-random-dev-cards-section, #assign-specific-dev-cards-section,
-    #remove-resources-section, #remove-dev-card-section {
-      padding: 1rem;
-    }
-    
-    input, select, button {
-      padding: 0.625rem;
-    }
-    
-    #resources-to-request, #resources-to-offer {
-      grid-template-columns: 1fr;
-    }
-  
+#confirm-end-game-btn {
+    background-color: var(--red);
+}
 
-    .header-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 20px;
-        width: 100%;
-      }
-      
-      /* Reduce h1 size for better layout */
-      h1 {
-        font-size: 2rem;
-        text-align: left;
-        cursor: pointer;
-      }
-      
-      /* Hamburger menu styles */
-      .menu-is-closed {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        width: 27px;
-        height: 20px;
-        cursor: pointer;
-        z-index: 110;
-      }
+.hidden {
+    display: none !important;
+}
 
-      .menu-is-open {
-        display: flex;
-        color: var(--header-text);
-        font-size: 1.8rem;
-        flex-direction: column;
-        justify-content: space-between;
-        width: 27px;
-        height: 40px;
-        cursor: pointer;
-        z-index: 110;
-      }
-      
-      .hamburger-line {
-        width: 100%;
-        height: 3px;
-        background-color: var(--header-text);
-        border-radius: 2px;
-        transition: all 0.3s ease;
-      }
-      
+.final-team-score.red {
+    border-left: 5px solid var(--red);
+}
+
+.final-team-score.green {
+    border-left: 5px solid var(--green);
+}
+
+.final-team-score.blue {
+    border-left: 5px solid var(--blue);
+}
+
+.final-team-score.white {
+    border-left: 5px solid var(--dark-text);
+}
+
+.senior-team-hand .dev-card {
+    border: none;
+    background-color: transparent;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    min-height: 0;
+}
+
+
+form,
+#trade-request,
+#robber-section,
+#choose-2-section,
+#assign-resources-section,
+#assign-random-dev-cards-section,
+#assign-specific-dev-cards-section,
+#remove-resources-section,
+#remove-dev-card-section {
+    padding: 1rem;
+}
+
+input,
+select,
+button {
+    padding: 0.625rem;
+}
+
+#resources-to-request,
+#resources-to-offer {
+    grid-template-columns: 1fr;
+}
+
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 2rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-is-closed {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 27px;
+    height: 20px;
+    cursor: pointer;
+    z-index: 110;
+}
+
+.menu-is-open {
+    display: flex;
+    color: var(--header-text);
+    font-size: 1.8rem;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 27px;
+    height: 40px;
+    cursor: pointer;
+    z-index: 110;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 3px;
+    background-color: var(--header-text);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+
+.card-container {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0.2rem;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.card-image {
+    width: 90px;
+    height: 140px;
+    object-fit: contain;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.inactive-card .card-image {
+    opacity: 0.4;
+    filter: grayscale(0.7);
+}
+
+.card-count {
+    background-color: #fff;
+    border-radius: 50%;
+    padding: 0.2rem 0.4rem;
+    font-weight: bold;
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.resource-card .card-count {
+    color: #333;
+}
+
+.resource-card {
+    max-width: 90px;
+    margin: 1rem;
+    margin-top: 0;
+}
+
+.card-details {
+    flex: 1;
+    margin-top: 0.5rem;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-description {
+    margin-top: 0.2rem;
+    padding-bottom: 0;
+    padding-top: 0;
+    font-size: 0.5rem;
+}
+
+.large-card .card-description {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.card-action-btn {
+    background-color: #5a3921;
+    color: white;
+    border: none;
+    font-size: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    margin-bottom: 0.4rem;
+    margin-top: 0;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.card-info-text {
+    font-style: italic;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.target-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.resource-selection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cards-container,
+.dev-cards-container,
+.resources-container,
+.resource-cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.card-display-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.large-card {
+    margin: 1rem auto;
+    text-align: center;
+}
+
+.large-card .card-image {
+    width: 180px;
+    height: 280px;
+    border-radius: 9px;
+}
+
+#notification-panel>p {
+    color: var(--gradient-text);
+    text-align: center;
+}

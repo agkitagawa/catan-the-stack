@@ -53,14 +53,14 @@ let initialHash = "";
 function wholePageEvenListeners() {
     window.addEventListener("DOMContentLoaded", function () {
         initialHash = location.hash.substring(1);
-    
+
         if (initialHash && initialHash !== "login" && initialHash !== "loading") {
             sessionStorage.setItem("initialHash", initialHash);
         }
 
         setupHamburgerMenu();
     });
-    
+
     window.addEventListener("hashchange", function () {
         if (auth.currentUser || localStorage.getItem("loggedIn") === "true") {
             const currentPage = location.hash.substring(1);
@@ -69,29 +69,29 @@ function wholePageEvenListeners() {
             }
         }
     });
-    
+
     window.addEventListener("load", function () {
         const isLoggedIn = auth.currentUser || localStorage.getItem("loggedIn") === "true";
         const currentHash = location.hash.substring(1);
         const savedPage = localStorage.getItem("currentPage");
-    
+
         if (isLoggedIn) {
             if ((!currentHash || currentHash === "home") && savedPage) {
                 localStorage.setItem("pageToRestore", savedPage);
             }
         }
     });
-    
+
     window.addEventListener("hashchange", () => {
         const user = auth.currentUser;
         const isLoggedInFromStorage = localStorage.getItem("loggedIn") === "true";
-    
+
         if (!user && !isLoggedInFromStorage && location.hash !== "#login") {
             history.replaceState({ pageId: "login" }, "", "#login");
             showPage("login", false);
         }
     });
-    
+
     window.addEventListener("popstate", (event) => {
         const user = auth.currentUser;
         if (!user) {
@@ -99,15 +99,15 @@ function wholePageEvenListeners() {
             showPage("login", false);
             return;
         }
-    
+
         const pageId = event.state?.pageId || location.hash.substring(1) || "login";
         showPage(pageId, false);
     });
-    
-    
+
+
     window.addEventListener("DOMContentLoaded", function () {
         setupGameManagement();
-    
+
         if (auth.currentUser || localStorage.getItem("loggedIn") === "true") {
             checkGameStateOnLoad();
         }
@@ -221,7 +221,6 @@ onAuthStateChanged(auth, (user) => {
     authCheckComplete = true;
 
     if (user) {
-        console.log("User is logged in:", user.email);
         localStorage.setItem("loggedIn", "true");
         showPage("loading", false);
 
@@ -233,39 +232,38 @@ onAuthStateChanged(auth, (user) => {
                 addManageGameToSenior();
             }
 
-            setupAfterLogin();
-            getAllResources();
+            setupAfterLogin().then(() => {
+                getAllResources();
 
-            const storedInitialHash = sessionStorage.getItem("initialHash");
-            const currentHash = location.hash.substring(1);
+                const storedInitialHash = sessionStorage.getItem("initialHash");
+                const currentHash = location.hash.substring(1);
 
-            if (storedInitialHash && storedInitialHash !== "login" && storedInitialHash !== "loading") {
-                showPage(storedInitialHash, false);
-                history.replaceState({ pageId: storedInitialHash }, "", `#${storedInitialHash}`);
-                sessionStorage.removeItem("initialHash");
-            }
-            else if (currentHash && currentHash !== "login" && currentHash !== "loading") {
-
-                showPage(currentHash, false);
-            }
-            else {
-                const savedPage = localStorage.getItem("currentPage");
-                if (savedPage && savedPage !== "login" && savedPage !== "loading") {
-
-                    showPage(savedPage, false);
-                    history.replaceState({ pageId: savedPage }, "", `#${savedPage}`);
-                } else {
-                    if (isGameActive) {
-                        console.log("No saved page, defaulting to home");
-                        showPage("home", false);
-                        history.replaceState({ pageId: "home" }, "", "#home");
+                if (storedInitialHash && storedInitialHash !== "login" && storedInitialHash !== "loading") {
+                    showPage(storedInitialHash, false);
+                    history.replaceState({ pageId: storedInitialHash }, "", `#${storedInitialHash}`);
+                    sessionStorage.removeItem("initialHash");
+                }
+                else if (currentHash && currentHash !== "login" && currentHash !== "loading") {
+                    showPage(currentHash, false);
+                }
+                else {
+                    const savedPage = localStorage.getItem("currentPage");
+                    if (savedPage && savedPage !== "login" && savedPage !== "loading") {
+                        showPage(savedPage, false);
+                        history.replaceState({ pageId: savedPage }, "", `#${savedPage}`);
                     } else {
-                        console.log("No saved page, defaulting to game over");
-                        showPage("game-over", false);
-                        history.replaceState({ pageId: "game-over" }, "", "#game-over");
+                        if (isGameActive) {
+                            console.log("No saved page, defaulting to home");
+                            showPage("home", false);
+                            history.replaceState({ pageId: "home" }, "", "#home");
+                        } else {
+                            console.log("No saved page, defaulting to game over");
+                            showPage("game-over", false);
+                            history.replaceState({ pageId: "game-over" }, "", "#game-over");
+                        }
                     }
                 }
-            }
+            });
         }).catch(err => {
             console.error("Error loading team data:", err);
             displayMessage("Error loading user data");
@@ -282,7 +280,6 @@ onAuthStateChanged(auth, (user) => {
         history.replaceState({ pageId: "login" }, "", "#login");
     }
 });
-
 
 function enforceAuthCheck(event) {
     const user = auth.currentUser;
@@ -322,15 +319,21 @@ async function getAllResources() {
         }
 
         teamsWithPoints.forEach(team => {
+            const teamContainer = qs(`#${team.id.toLowerCase()}-resources`);
+            if (!teamContainer) {
+                console.warn(`Team container not found for ${team.id}`);
+                return;
+            }
+
+            teamContainer.innerHTML = '';
+
             const resources = ["grain", "wool", "brick", "lumber"];
             resources.forEach(resource => {
-              const elementId = `${team.id}-${resource}`;
-              const element = qs(`#${elementId}`);
-              if (element) {
-                element.textContent = `${capitalize(resource)}: ${team.resources[resource]}`;
-              }
+                const amount = team.resources[resource] || 0;
+                const cardContainer = createResourceCard(resource, amount);
+                teamContainer.appendChild(cardContainer);
             });
-          });
+        });
 
         return true;
     } catch (err) {
@@ -351,9 +354,18 @@ async function getAllHands() {
 
         const seniorHandsContainer = qs("#senior-team-hands");
         seniorHandsContainer.innerHTML = "";
+        const teamOrder = ["green", "red", "blue", "white"];
 
+        const teamsMap = {};
         teamsWithPoints.forEach(team => {
-            const teamId = team.id.toLowerCase();
+            teamsMap[team.id.toLowerCase()] = team;
+        });
+
+        teamOrder.forEach(teamId => {
+            const team = teamsMap[teamId];
+
+            if (!team) return;
+
             const teamSection = gen("section");
             teamSection.classList.add("senior-team-hand");
 
@@ -370,24 +382,26 @@ async function getAllHands() {
             devCardsHeader.textContent = "Development Cards";
             teamSection.appendChild(devCardsHeader);
 
-            const devCardsSection = gen("section");
-            devCardsSection.id = `senior-${teamId}-dev-cards`;
-            teamSection.appendChild(devCardsSection);
+            const devCardsContainer = gen("section");
+            devCardsContainer.classList.add("cards-container", "dev-cards-container");
+            teamSection.appendChild(devCardsContainer);
 
             const resourcesHeader = gen("h4");
             resourcesHeader.textContent = "Resources";
             teamSection.appendChild(resourcesHeader);
 
+            const resourcesContainer = gen("section");
+            resourcesContainer.classList.add("cards-container", "resources-container");
+            teamSection.appendChild(resourcesContainer);
+
             const resources = ["grain", "wool", "brick", "lumber"];
             resources.forEach(resource => {
-                const p = gen("p");
-                p.id = `senior-${teamId}-${resource}`;
-                p.textContent = `${capitalize(resource)}: ${team.resources[resource]}`;
-                teamSection.appendChild(p);
+                const amount = team.resources[resource] || 0;
+                const cardContainer = createResourceCard(resource, amount);
+                resourcesContainer.appendChild(cardContainer);
             });
 
             const devCards = team.development_cards || [];
-            const devCardsEl = devCardsSection;
 
             if (devCards && devCards.length > 0) {
                 const victoryPoints = devCards.filter(card => card === "Victory Point").length;
@@ -395,19 +409,23 @@ async function getAllHands() {
                 if (victoryPoints > 0) {
                     const totalPoints = gen("p");
                     totalPoints.classList.add("total-points");
-                    totalPoints.innerHTML = `<strong>Total Points (including VP cards):</strong> ${team.points + victoryPoints}`;
+                    totalPoints.innerHTML = `<strong>Total Points w/ VP cards:</strong> ${team.points + victoryPoints}`;
                     teamSection.insertBefore(totalPoints, pointsDetails.nextSibling);
                 }
 
+                const cardCounts = {};
                 devCards.forEach(card => {
-                    const p = gen("p");
-                    p.textContent = card;
-                    devCardsEl.appendChild(p);
+                    cardCounts[card] = (cardCounts[card] || 0) + 1;
+                });
+
+                Object.keys(cardCounts).forEach(cardType => {
+                    const cardContainer = createDevCard(cardType, cardCounts[cardType]);
+                    devCardsContainer.appendChild(cardContainer);
                 });
             } else {
-                const p = gen("p");
-                p.textContent = "No development cards";
-                devCardsEl.appendChild(p);
+                const noCardsMsg = gen("p");
+                noCardsMsg.textContent = "No development cards";
+                devCardsContainer.appendChild(noCardsMsg);
             }
 
             seniorHandsContainer.appendChild(teamSection);
@@ -444,10 +462,36 @@ async function loadTeamData(userId) {
 }
 
 async function loadDevCardDescriptions() {
-    const snapshot = await getDocs(devCardInfoRef);
-    devCardDescriptions = {};
-    snapshot.forEach(doc => {
-        devCardDescriptions[doc.id] = doc.data().description;
+    try {
+        const snapshot = await getDocs(devCardInfoRef);
+        devCardDescriptions = {};
+        snapshot.forEach(doc => {
+            devCardDescriptions[doc.id] = doc.data().description;
+        });
+        return devCardDescriptions;
+    } catch (error) {
+        console.error("Error loading dev card descriptions:", error);
+        displayMessage("Failed to load card descriptions");
+        return {};
+    }
+}
+
+async function populateRobberTargetDropdown() {
+    const teamsCol = collection(db, "teams");
+    const teamsSnapshot = await getDocs(teamsCol);
+    const select = qs("#robber-target-team");
+    if (!select) return;
+
+    select.innerHTML = '<option value="" disabled selected>Select a team to rob</option>';
+
+    teamsSnapshot.forEach(teamDoc => {
+        const id = teamDoc.id;
+        if (id === teamColor) return;
+
+        const option = gen("option");
+        option.value = id;
+        option.textContent = capitalize(id);
+        select.appendChild(option);
     });
 }
 
@@ -474,117 +518,214 @@ function resetSeniorFormButtons() {
 
 /* button listeners */
 function setUpButtons() {
-    const seeHandBtn = qs("#see-hand-btn");
-    if (seeHandBtn) {
-        seeHandBtn.addEventListener("click", () => {
-            showPage("personal-hand");
-        });
-    }
-    
     const loginForm = qs("#login-form");
+    const logoutBtn = qs("#logout-btn");
+    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    const seniorSubmitAssignResourcesBtn = qs("#submit-assign-resources");
+    const seniorSubmitAssignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
+    const seniorSubmitAssignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
+    const seniorSubmitRemoveResourcesBtn = qs("#submit-remove-resources");
+    const seniorSubmitRemoveDevCardBtn = qs("#submit-remove-dev-card");
+    const seeHandBtn = qs("#see-hand-btn");
+    const submitTradeBtn = qs("#submit-trade-request");
+    const manageTradesBtn = qs("#manage-trades-btn");
+    const submitRobberRequestBtn = qs("#submit-robber-request");
+    const submitChoose2RequestBtn = qs("#submit-choose-2-request");
+    const notificationsBtn = qs("#notifications-btn");
+
+
     if (loginForm) {
         loginForm.addEventListener("submit", login);
     }
-    
-    const notificationsBtn = qs("#notifications-btn");
-    if (notificationsBtn) {
-        notificationsBtn.addEventListener("click", () => {
-            showPage("notifications");
-        });
-    }
-    
-    const logoutBtn = qs("#logout-btn");
+
+    qs("#submit-login").addEventListener("click", function (e) {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+        login(email, password);
+    });
+
     if (logoutBtn) {
         logoutBtn.addEventListener("click", logout);
     }
-    
-    const seniorNotificationsBtn = qs("#senior-notifications-btn");
-    if (seniorNotificationsBtn) {
-        seniorNotificationsBtn.addEventListener("click", () => {
-            showPage("senior-notifications");
-        });
+
+    if (isSenior) {
+        if (seniorSeeHandsBtn) {
+            seniorSeeHandsBtn.addEventListener("click", () => {
+                showPage("senior-see-hands");
+            });
+        }
+
+        if (seniorSubmitAssignResourcesBtn) {
+            seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
+                const team = qs("#team-to-assign-resources").value;
+                const resource = qs("#resource-to-assign").value;
+                const amount = Number(qs("#amount-to-assign").value);
+                if (amount < 1) {
+                    displayMessage("Amount must be at least 1.");
+                    return;
+                }
+                assignResourceCard(team, resource, amount);
+                resetSeniorFormButtons();
+            });
+        }
+
+        if (seniorSubmitAssignRandomDevCardBtn) {
+            seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
+                const team = qs("#team-to-assign-random-dev-card").value;
+
+                const randomNumber = Math.random();
+                let card;
+                if (randomNumber < 0.6) {
+                    card = "Robber";
+                } else if (randomNumber < 0.75) {
+                    card = "Victory Point";
+                } else {
+                    card = "Choose 2 Resources";
+                }
+
+                assignDevCard(team, card);
+                resetSeniorFormButtons();
+            });
+        }
+
+        if (seniorSubmitAssignSpecificDevCardBtn) {
+            seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
+                const team = qs("#team-to-assign-specific-dev-card").value;
+                const card = qs("#dev-card-to-assign").value;
+                assignDevCard(team, card);
+                resetSeniorFormButtons();
+            });
+        }
+
+        if (seniorSubmitRemoveResourcesBtn) {
+            seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
+                const team = qs("#team-to-remove-resources").value;
+                const resource = qs("#resource-to-remove").value;
+                const amount = Number(qs("#amount-to-remove").value);
+                removeResourceCard(team, resource, amount);
+                resetSeniorFormButtons();
+            });
+        }
+
+        if (seniorSubmitRemoveDevCardBtn) {
+            seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
+                const team = qs("#team-to-remove-dev-card").value;
+                const card = qs("#dev-card-to-remove").value;
+                removeDevCard(team, card);
+                resetSeniorFormButtons();
+            });
+        }
+
+        if (seeHandBtn) {
+            seeHandBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+
+        if (submitTradeBtn) {
+            submitTradeBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+
+        if (manageTradesBtn) {
+            manageTradesBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+
+        if (submitRobberRequestBtn) {
+            submitRobberRequestBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+
+        if (submitChoose2RequestBtn) {
+            submitChoose2RequestBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+    } else {
+        if (seniorSeeHandsBtn) {
+            seniorSeeHandsBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seniorSubmitAssignResourcesBtn) {
+            seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seniorSubmitAssignRandomDevCardBtn) {
+            seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seniorSubmitAssignSpecificDevCardBtn) {
+            seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seniorSubmitRemoveResourcesBtn) {
+            seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seniorSubmitRemoveDevCardBtn) {
+            seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+
+        if (seeHandBtn) {
+            seeHandBtn.addEventListener("click", () => {
+                showPage("personal-hand");
+            });
+        }
+
+        if (submitTradeBtn) {
+            submitTradeBtn.addEventListener("click", () => {
+                submitTradeRequest()
+            });
+        }
+
+        if (manageTradesBtn) {
+            manageTradesBtn.addEventListener("click", () => {
+                const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
+                if (tradeRequestsTimestamp) {
+                    tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                }
+                showPage("manage-trades");
+            });
+        }
+
+        if (submitRobberRequestBtn) {
+            submitRobberRequestBtn.addEventListener("click", () => {
+                useRobber();
+                const robberSelect = qs("#robber-target-team");
+                robberSelect.value = "";
+                submitRobberRequestBtn.disabled = true;
+            });
+        }
+
+        if (submitChoose2RequestBtn) {
+            submitChoose2RequestBtn.addEventListener("click", () => {
+                useChoose2Resources();
+                const res1 = qs("#choose-2-resource1");
+                const res2 = qs("#choose-2-resource2");
+                res1.value = "";
+                res2.value = "";
+                submitChoose2RequestBtn.disabled = true;
+            });
+        }
     }
-    
-    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
-    if (seniorSeeHandsBtn) {
-        seniorSeeHandsBtn.addEventListener("click", () => {
-            showPage("senior-see-hands");
-        });
-    }
-    
-    const seniorSubmitAssignResourcesBtn = qs("#submit-assign-resources");
-    if (seniorSubmitAssignResourcesBtn) {
-        seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
-            const team = qs("#team-to-assign-resources").value;
-            const resource = qs("#resource-to-assign").value;
-            const amount = Number(qs("#amount-to-assign").value);
-            if (amount < 1) {
-                displayMessage("Amount must be at least 1.");
-                return;
-            }
-            assignResourceCard(team, resource, amount);
-            resetSeniorFormButtons();
-        });
-    }
-    
-    const seniorSubmitAssignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
-    if (seniorSubmitAssignRandomDevCardBtn) {
-        seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
-            const team = qs("#team-to-assign-random-dev-card").value;
-    
-            const randomNumber = Math.random();
-            let card;
-            if (randomNumber < 0.6) {
-                card = "Robber";
-            } else if (randomNumber < 0.75) {
-                card = "Victory Point";
-            } else {
-                card = "Choose 2 Resources";
-            }
-    
-            assignDevCard(team, card);
-            resetSeniorFormButtons();
-        });
-    }
-    
-    const seniorSubmitAssignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
-    if (seniorSubmitAssignSpecificDevCardBtn) {
-        seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
-            const team = qs("#team-to-assign-specific-dev-card").value;
-            const card = qs("#dev-card-to-assign").value;
-            assignDevCard(team, card);
-            resetSeniorFormButtons();
-        });
-    }
-    
-    const seniorSubmitRemoveResourcesBtn = qs("#submit-remove-resources");
-    if (seniorSubmitRemoveResourcesBtn) {
-        seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
-            const team = qs("#team-to-remove-resources").value;
-            const resource = qs("#resource-to-remove").value;
-            const amount = Number(qs("#amount-to-remove").value);
-            removeResourceCard(team, resource, amount);
-            resetSeniorFormButtons();
-        });
-    }
-    
-    const seniorSubmitRemoveDevCardBtn = qs("#submit-remove-dev-card");
-    if (seniorSubmitRemoveDevCardBtn) {
-        seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
-            const team = qs("#team-to-remove-dev-card").value;
-            const card = qs("#dev-card-to-remove").value;
-            removeDevCard(team, card);
-            resetSeniorFormButtons();
-        });
-    }
-    
-    const submitTradeBtn = qs("#submit-trade-request");
-    if (submitTradeBtn) {
-        submitTradeBtn.addEventListener("click", () => {
-            submitTradeRequest()
-        });
-    }
-    
+
     if (notificationsBtn) {
         notificationsBtn.addEventListener("click", () => {
             const notificationsTimestamp = qs("#notifications-last-updated");
@@ -594,46 +735,6 @@ function setUpButtons() {
             showPage("notifications");
         });
     }
-    
-    const manageTradesBtn = qs("#manage-trades-btn");
-    if (manageTradesBtn) {
-        manageTradesBtn.addEventListener("click", () => {
-            const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
-            if (tradeRequestsTimestamp) {
-                tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-            }
-            showPage("manage-trades");
-        });
-    }
-    
-    const submitRobberRequestBtn = qs("#submit-robber-request");
-    if (submitRobberRequestBtn) {
-        submitRobberRequestBtn.addEventListener("click", () => {
-            useRobber();
-            const robberSelect = qs("#robber-target-team");
-            robberSelect.value = "";
-            submitRobberRequestBtn.disabled = true;
-        });
-    }
-    
-    const submitChoose2RequestBtn = qs("#submit-choose-2-request");
-    if (submitChoose2RequestBtn) {
-        submitChoose2RequestBtn.addEventListener("click", () => {
-            useChoose2Resources();
-            const res1 = qs("#choose-2-resource1");
-            const res2 = qs("#choose-2-resource2");
-            res1.value = "";
-            res2.value = "";
-            submitChoose2RequestBtn.disabled = true;
-        });
-    }
-    
-    qs("#submit-login").addEventListener("click", function (e) {
-        e.preventDefault();
-        const email = document.getElementById("loginEmail").value;
-        const password = document.getElementById("loginPassword").value;
-        login(email, password);
-    });
 }
 
 function fixHomeButtonListener() {
@@ -642,15 +743,15 @@ function fixHomeButtonListener() {
         console.error("Home button not found");
         return;
     }
-    
+
     const newBtn = homeBtn.cloneNode(true);
     homeBtn.parentNode.replaceChild(newBtn, homeBtn);
-    
+
     newBtn.addEventListener("click", async () => {
         try {
             const gameStateRef = doc(db, "game_state", "current");
             const gameStateDoc = await getDoc(gameStateRef);
-            
+
             if (gameStateDoc.exists()) {
                 const data = gameStateDoc.data();
                 isGameActive = data.active || false;
@@ -658,7 +759,7 @@ function fixHomeButtonListener() {
                 console.log("No game state found");
                 isGameActive = false;
             }
-            
+
             if (isGameActive) {
                 if (auth.currentUser || localStorage.getItem("teamColor")) {
                     getAllResources();
@@ -691,105 +792,105 @@ function forceSelections() {
             robberBtn.disabled = !robberSelect.value;
         });
     }
-    
+
     const assignResourcesTeamSelect = qs("#team-to-assign-resources");
     const assignResourcesResourceSelect = qs("#resource-to-assign");
     const assignResourcesBtn = qs("#submit-assign-resources");
-    
+
     function updateAssignResourcesButtonState() {
         const val1 = assignResourcesTeamSelect.value;
         const val2 = assignResourcesResourceSelect.value;
         assignResourcesBtn.disabled = !(val1 && val2);
     }
-    
+
     if (assignResourcesTeamSelect && assignResourcesResourceSelect && assignResourcesBtn) {
         assignResourcesTeamSelect.addEventListener("change", updateAssignResourcesButtonState);
         assignResourcesResourceSelect.addEventListener("change", updateAssignResourcesButtonState);
     }
-    
+
     const assignRandomDevCardTeamSelect = qs("#team-to-assign-random-dev-card");
     const assignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
-    
+
     function updateAssignRandomDevCardButtonState() {
         const val1 = assignRandomDevCardTeamSelect.value;
         assignRandomDevCardBtn.disabled = !val1;
     }
-    
+
     if (assignRandomDevCardTeamSelect && assignRandomDevCardBtn) {
         assignRandomDevCardTeamSelect.addEventListener("change", updateAssignRandomDevCardButtonState);
     }
-    
+
     const assignSpecificDevCardTeamSelect = qs("#team-to-assign-specific-dev-card");
     const assignSpecificDevCardSelect = qs("#dev-card-to-assign");
     const assignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
-    
+
     function updateAssignSpecificDevCardButtonState() {
         const val1 = assignSpecificDevCardTeamSelect.value;
         const val2 = assignSpecificDevCardSelect.value;
         assignSpecificDevCardBtn.disabled = !(val1 && val2);
     }
-    
+
     if (assignSpecificDevCardTeamSelect && assignSpecificDevCardSelect && assignSpecificDevCardBtn) {
         assignSpecificDevCardTeamSelect.addEventListener("change", updateAssignSpecificDevCardButtonState);
         assignSpecificDevCardSelect.addEventListener("change", updateAssignSpecificDevCardButtonState);
     }
-    
+
     const removeResourcesTeamSelect = qs("#team-to-remove-resources");
     const removeResourcesResourceSelect = qs("#resource-to-remove");
     const removeResourcesBtn = qs("#submit-remove-resources");
-    
+
     function updateRemoveResourcesButtonState() {
         const val1 = removeResourcesTeamSelect.value;
         const val2 = removeResourcesResourceSelect.value;
         removeResourcesBtn.disabled = !(val1 && val2);
     }
-    
+
     if (removeResourcesTeamSelect && removeResourcesResourceSelect && removeResourcesBtn) {
         removeResourcesTeamSelect.addEventListener("change", updateRemoveResourcesButtonState);
         removeResourcesResourceSelect.addEventListener("change", updateRemoveResourcesButtonState);
     }
-    
+
     const removeDevCardTeamSelect = qs("#team-to-remove-dev-card");
     const removeDevCardSelect = qs("#dev-card-to-remove");
     const removeDevCardBtn = qs("#submit-remove-dev-card");
-    
+
     function updateRemoveDevCardButtonState() {
         const val1 = removeDevCardTeamSelect.value;
         const val2 = removeDevCardSelect.value;
         removeDevCardBtn.disabled = !(val1 && val2);
     }
-    
+
     if (removeDevCardTeamSelect && removeDevCardSelect && removeDevCardBtn) {
         removeDevCardTeamSelect.addEventListener("change", updateRemoveDevCardButtonState);
         removeDevCardSelect.addEventListener("change", updateRemoveDevCardButtonState);
     }
-    
+
     const res1 = qs("#choose-2-resource1");
     const res2 = qs("#choose-2-resource2");
     const choose2Btn = qs("#submit-choose-2-request");
-    
+
     function updateChoose2ButtonState() {
         const val1 = res1.value;
         const val2 = res2.value;
         choose2Btn.disabled = !(val1 && val2);
     }
-    
+
     if (res1 && res2 && choose2Btn) {
         res1.addEventListener("change", updateChoose2ButtonState);
         res2.addEventListener("change", updateChoose2ButtonState);
     }
-    
+
     const requestFrom = qs("#team-to-request-from");
     const requestTradeBtn = qs("#submit-trade-request");
-    
+
     function updateRequestTradeButtonState() {
         const val1 = requestFrom.value;
         requestTradeBtn.disabled = !val1;
     }
-    
+
     if (requestFrom && requestTradeBtn) {
         requestFrom.addEventListener("change", updateRequestTradeButtonState);
-    }    
+    }
 }
 
 /* display stuff */
@@ -846,9 +947,9 @@ function showPage(pageId, pushState = true) {
     const menuToggle = qs("#menu-toggle");
     const openMenuBtn = qs(".menu-is-closed");
     const closeMenuBtn = qs(".menu-is-open");
-    
+
     if (nav) nav.classList.add("hidden");
-    
+
     if (pageId === "login") {
         if (menuToggle) menuToggle.classList.add("hidden");
     } else {
@@ -876,7 +977,7 @@ function showPage(pageId, pushState = true) {
     }
 }
 
-function populatePageContent(pageId) {
+async function populatePageContent(pageId) {
     switch (pageId) {
         case "home":
             getAllResources();
@@ -954,7 +1055,27 @@ function populatePageContent(pageId) {
             break;
 
         case "use-robber":
+            const hasRobber = await hasDevCard("Robber");
+            if (!hasRobber) {
+                displayMessage("You don't have a Robber card to use!");
+                showPage("personal-hand", false);
+                return;
+            }
+
             populateRobberTargetDropdown();
+            updateRobberPage();
+            break;
+
+        case "use-choose-2-resources":
+            const hasChoose2 = await hasDevCard("Choose 2 Resources");
+            if (!hasChoose2) {
+                displayMessage("You don't have a Choose 2 Resources card to use!");
+                showPage("personal-hand", false);
+                return;
+            }
+
+            loadDevCardDescriptions();
+            updateChoose2ResourcesPage();
             break;
 
         case "senior-manage-game":
@@ -962,7 +1083,6 @@ function populatePageContent(pageId) {
             setTimeout(() => {
                 setupSimplifiedEndGame();
             }, 100);
-
             break;
 
         default:
@@ -977,6 +1097,8 @@ async function showPersonalHand() {
     }
 
     try {
+        await loadDevCardDescriptions();
+
         const teamDocRef = doc(db, "teams", teamColor);
         const teamDoc = await getDoc(teamDocRef);
 
@@ -986,7 +1108,6 @@ async function showPersonalHand() {
         }
 
         const data = teamDoc.data();
-
         const resources = [
             data.grain || 0,
             data.wool || 0,
@@ -997,65 +1118,61 @@ async function showPersonalHand() {
 
         const yourHandSection = qs("#your-hand");
         yourHandSection.classList.add(teamColor.toLowerCase());
-        let pointsDisplay = qs("#personal-points");
 
+        let pointsDisplay = qs("#personal-points");
         if (!pointsDisplay) {
             pointsDisplay = gen("h3");
             pointsDisplay.id = "personal-points";
             yourHandSection.insertBefore(pointsDisplay, yourHandSection.firstChild);
         }
-
         pointsDisplay.textContent = `Your Points: ${points}`;
-        qs("#grain").textContent = `Grain: ${data.grain || 0}`;
-        qs("#wool").textContent = `Wool: ${data.wool || 0}`;
-        qs("#brick").textContent = `Brick: ${data.brick || 0}`;
-        qs("#lumber").textContent = `Lumber: ${data.lumber || 0}`;
+
+        const resourceSection = qs("#resource-cards");
+        if (!resourceSection) {
+            const newResourceSection = gen("section");
+            newResourceSection.id = "resource-cards";
+            newResourceSection.classList.add("resource-cards-container");
+
+            const resourceHeader = qs("#resource-header");
+            if (resourceHeader) {
+                resourceHeader.after(newResourceSection);
+            } else {
+                const header = gen("h3");
+                header.id = "resource-header";
+                header.textContent = "Resources";
+                yourHandSection.appendChild(header);
+                yourHandSection.appendChild(newResourceSection);
+            }
+
+            resourceSection = newResourceSection;
+        } else {
+            resourceSection.innerHTML = "";
+        }
+
+        const resourceTypes = ["grain", "wool", "brick", "lumber"];
+        resourceTypes.forEach(resourceType => {
+            const amount = data[resourceType] || 0;
+            const cardContainer = createResourceCard(resourceType, amount);
+            resourceSection.appendChild(cardContainer);
+        });
 
         const devCardsSection = qs("#dev-cards-in-hand");
         devCardsSection.innerHTML = "";
+
         if (data.development_cards && data.development_cards.length > 0) {
-            const victoryPoints = data.development_cards.filter(card => card === "Victory Point").length;
-
-            if (victoryPoints > 0) {
-                const vpCounterDiv = gen("div");
-                vpCounterDiv.classList.add("dev-card-counter");
-                vpCounterDiv.innerHTML = `<p>You have <strong>${victoryPoints} Victory Point</strong> card${victoryPoints > 1 ? 's' : ''} (hidden from other teams)</p>`;
-                devCardsSection.appendChild(vpCounterDiv);
-            }
-
+            const cardCounts = {};
             data.development_cards.forEach(card => {
-                const div = gen("div");
-                div.classList.add("dev-card");
+                cardCounts[card] = (cardCounts[card] || 0) + 1;
+            });
 
-                const p = gen("p");
-                p.textContent = card;
-                div.appendChild(p);
-
-                const descP = gen("p");
-                descP.classList.add("dev-card-description");
-                descP.textContent = devCardDescriptions[card] || "No description available.";
-                div.appendChild(descP);
-
-                const btn = gen("button");
-                if (card === "Robber" || card === "Choose 2 Resources") {
-                    btn.textContent = `Use ${card}`;
-                    btn.onclick = () => {
-                        if (card === "Robber") showPage("use-robber");
-                        else if (card === "Choose 2 Resources") showPage("use-choose-2-resources");
-                    };
-                } else if (card === "Victory Point") {
-                    btn.textContent = `Point will be added automatically at the end of the game`;
-                    btn.classList.add("disabled");
-                } else {
-                    btn.textContent = `Point will be added automatically at the end of the game`;
-                    btn.classList.add("disabled");
-                }
-
-                div.appendChild(btn);
-                devCardsSection.appendChild(div);
+            Object.keys(cardCounts).forEach(cardType => {
+                const cardContainer = createDevCard(cardType, cardCounts[cardType], true);
+                devCardsSection.appendChild(cardContainer);
             });
         } else {
-            devCardsSection.textContent = "No development cards";
+            const emptyMessage = gen("p");
+            emptyMessage.textContent = "No development cards";
+            devCardsSection.appendChild(emptyMessage);
         }
 
         qs("#personal-hand-last-updated").textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
@@ -1064,6 +1181,89 @@ async function showPersonalHand() {
         displayMessage("Failed to load your hand.");
     }
 }
+
+function createResourceCard(resourceType, count) {
+    const cardContainer = gen("div");
+    cardContainer.classList.add("card-container", "resource-card");
+
+    if (count === 0) {
+        cardContainer.classList.add("inactive-card");
+    }
+
+    const cardImg = gen("img");
+    cardImg.src = `img/${resourceType}.png`;
+    cardImg.alt = capitalize(resourceType);
+    cardImg.classList.add("card-image");
+
+    if (count > 0) {
+        const cardCount = gen("div");
+        cardCount.classList.add("card-count");
+        cardCount.textContent = `x${count}`;
+        cardContainer.appendChild(cardCount);
+    }
+
+    cardContainer.appendChild(cardImg);
+
+    return cardContainer;
+}
+
+function createDevCard(cardType, count, includeActions = false) {
+    const cardContainer = gen("div");
+    cardContainer.classList.add("card-container", "dev-card");
+
+    const cardImg = gen("img");
+    cardImg.src = `img/${cardType.toLowerCase().replace(/\s+/g, '-')}.png`;
+    cardImg.alt = cardType;
+    cardImg.classList.add("card-image");
+
+    const cardCount = gen("div");
+    cardCount.classList.add("card-count");
+    cardCount.textContent = `x${count}`;
+
+    cardContainer.appendChild(cardImg);
+    cardContainer.appendChild(cardCount);
+
+    if (includeActions) {
+        const cardDetails = gen("div");
+        cardDetails.classList.add("card-details");
+
+        const description = gen("p");
+        description.classList.add("card-description");
+        description.textContent = devCardDescriptions[cardType] || "No description available.";
+        cardDetails.appendChild(description);
+
+        if (cardType === "Robber") {
+            const actionBtn = gen("button");
+            actionBtn.classList.add("card-action-btn");
+            actionBtn.textContent = "Use Robber";
+            actionBtn.onclick = () => showPage("use-robber");
+            cardDetails.appendChild(actionBtn);
+        }
+        else if (cardType === "Choose 2 Resources") {
+            const actionBtn = gen("button");
+            actionBtn.classList.add("card-action-btn");
+            actionBtn.textContent = "Use Choose 2 Resources";
+            actionBtn.onclick = () => showPage("use-choose-2-resources");
+            cardDetails.appendChild(actionBtn);
+        }
+
+        cardContainer.appendChild(cardDetails);
+    }
+
+    return cardContainer;
+}
+
+const originalPopulatePageContent = populatePageContent;
+populatePageContent = function (pageId) {
+    originalPopulatePageContent(pageId);
+
+    if (pageId === "use-robber") {
+        updateRobberPage();
+    }
+    else if (pageId === "use-choose-2-resources") {
+        updateChoose2ResourcesPage();
+    }
+};
 
 /* scorekeeping */
 async function calculatePoints() {
@@ -1303,7 +1503,7 @@ async function checkGameActive() {
         if (gameStateDoc.exists()) {
             const data = gameStateDoc.data();
             isGameActive = data.active || false;
-            
+
             const startGameBtn = qs("#start-new-game-btn");
             const endGameBtn = qs("#end-game-btn");
             const statusMessage = qs("#game-status-message");
@@ -1793,28 +1993,28 @@ function listenForIncomingTrades() {
             const div = gen("div");
             div.classList.add("pending-trade-request");
             const offerResources = ["grain", "wool", "brick", "lumber"]
-            .filter(res => trade.offer[res] && trade.offer[res] > 0);
+                .filter(res => trade.offer[res] && trade.offer[res] > 0);
 
             const requestResources = ["grain", "wool", "brick", "lumber"]
                 .filter(res => trade.request[res] && trade.request[res] > 0);
 
             div.innerHTML = `
                 <p><strong>Team ${trade.fromTeam}</strong> is offering:</p>
-                ${offerResources.length > 0 ? 
+                ${offerResources.length > 0 ?
                     `<ul>
                         ${offerResources
-                            .map(res => `<li>${capitalize(res)}: ${trade.offer[res]}</li>`)
-                            .join("")}
-                    </ul>` : 
+                        .map(res => `<li>${capitalize(res)}: ${trade.offer[res]}</li>`)
+                        .join("")}
+                    </ul>` :
                     `<p class="empty-list">Nothing</p>`
                 }
                 <p>In exchange for:</p>
-                ${requestResources.length > 0 ? 
+                ${requestResources.length > 0 ?
                     `<ul>
                         ${requestResources
-                            .map(res => `<li>${capitalize(res)}: ${trade.request[res]}</li>`)
-                            .join("")}
-                    </ul>` : 
+                        .map(res => `<li>${capitalize(res)}: ${trade.request[res]}</li>`)
+                        .join("")}
+                    </ul>` :
                     `<p class="empty-list">Nothing</p>`
                 }
                 <button class="accept-trade" data-id="${tradeId}">Accept</button>
@@ -2107,6 +2307,13 @@ async function deleteDevCard(cardType) {
 }
 
 async function useRobber() {
+    const hasRobberCard = await hasDevCard("Robber");
+    if (!hasRobberCard) {
+        displayMessage("You don't have a Robber card to use!");
+        showPage("personal-hand", false);
+        return;
+    }
+
     const select = qs("#robber-target-team");
     const selectedTeam = select.value;
 
@@ -2141,6 +2348,10 @@ async function useRobber() {
 
     const robberTeamRef = doc(db, "teams", teamColor);
     const [robberDoc] = await Promise.all([getDoc(robberTeamRef)]);
+    if (!robberDoc.exists()) {
+        displayMessage("You don't have a robber card.");
+        return;
+    }
     const robberData = robberDoc.data();
 
     const updates = {};
@@ -2158,6 +2369,13 @@ async function useRobber() {
 }
 
 async function useChoose2Resources() {
+    const hasChoose2Card = await hasDevCard("Choose 2 Resources");
+    if (!hasChoose2Card) {
+        displayMessage("You don't have a Choose 2 Resources card to use!");
+        showPage("personal-hand", false);
+        return;
+    }
+
     const resource1 = qs("#choose-2-resource1").value;
     const resource2 = qs("#choose-2-resource2").value;
 
@@ -2166,23 +2384,77 @@ async function useChoose2Resources() {
     await deleteDevCard("Choose 2 Resources");
 }
 
-async function populateRobberTargetDropdown() {
-    const teamsCol = collection(db, "teams");
-    const teamsSnapshot = await getDocs(teamsCol);
-    const select = qs("#robber-target-team");
-    if (!select) return;
+function updateRobberPage() {
+    const robberCardContainer = qs("#robber-card-container");
+    if (!robberCardContainer) return;
 
-    select.innerHTML = '<option value="" disabled selected>Select a team to rob</option>';
+    robberCardContainer.innerHTML = "";
 
-    teamsSnapshot.forEach(teamDoc => {
-        const id = teamDoc.id;
-        if (id === teamColor) return;
+    const robberCard = gen("div");
+    robberCard.classList.add("card-container", "dev-card", "large-card");
 
-        const option = gen("option");
-        option.value = id;
-        option.textContent = capitalize(id);
-        select.appendChild(option);
-    });
+    const cardImg = gen("img");
+    cardImg.src = "img/robber.png";
+    cardImg.alt = "Robber";
+    cardImg.classList.add("card-image");
+
+    const cardDescription = gen("p");
+    cardDescription.classList.add("card-description");
+    cardDescription.textContent = "Steal one random resource from a team of your choice.";
+
+    robberCard.appendChild(cardImg);
+    robberCard.appendChild(cardDescription);
+
+    robberCardContainer.appendChild(robberCard);
+}
+
+function updateChoose2ResourcesPage() {
+    const choose2CardContainer = qs("#choose-2-card-container");
+    if (!choose2CardContainer) return;
+
+    choose2CardContainer.innerHTML = "";
+
+    const choose2Card = gen("div");
+    choose2Card.classList.add("card-container", "dev-card", "large-card");
+
+    const cardImg = gen("img");
+    cardImg.src = "img/choose-2-resources.png";
+    cardImg.alt = "Choose 2 Resources";
+    cardImg.classList.add("card-image");
+
+    const cardDescription = gen("p");
+    cardDescription.classList.add("card-description");
+    cardDescription.textContent = "Receive two resource cards of your choosing. They can be the same or different.";
+
+    choose2Card.appendChild(cardImg);
+    choose2Card.appendChild(cardDescription);
+
+    choose2CardContainer.appendChild(choose2Card);
+}
+
+async function hasDevCard(cardType) {
+    try {
+        if (!teamColor) {
+            console.warn("Cannot check for cards - no team color found");
+            return false;
+        }
+
+        const teamRef = doc(db, "teams", teamColor);
+        const teamSnap = await getDoc(teamRef);
+
+        if (!teamSnap.exists()) {
+            console.error("Team not found in database");
+            return false;
+        }
+
+        const data = teamSnap.data();
+        const cards = data.development_cards || [];
+
+        return cards.includes(cardType);
+    } catch (err) {
+        console.error("Error checking for dev card:", err);
+        return false;
+    }
 }
 
 /* game over */
@@ -2234,6 +2506,7 @@ async function displayGameOver(teamsWithPoints) {
         }
 
         modifyNavigationForGameOver(isSenior);
+        showGameOverMenu();
 
         const winnerAnnouncement = qs("#winner-announcement");
         if (winnerAnnouncement) {
@@ -2260,13 +2533,19 @@ async function displayGameOver(teamsWithPoints) {
                 }
 
                 const teamName = capitalize(team.id);
-                const victoryPointsText = team.victoryPoints > 0
-                    ? `(${team.points} resources + ${team.victoryPoints} victory points)`
-                    : "";
+
+                let victoryPointsText = "";
+                if (team.victoryPoints > 0) {
+                    victoryPointsText += `${team.victoryPoints} Victory Point`;
+                }
+
+                if (team.victoryPoints > 1) {
+                    victoryPointsText += "s";
+                }
 
                 teamSection.innerHTML = `
             <span class="team-name">${teamName} Team</span>
-            <div>
+            <div class="team-points">
               <span class="team-final-points">${team.totalPoints} Points</span>
               <div class="points-breakdown">${victoryPointsText}</div>
             </div>
@@ -2299,70 +2578,13 @@ function modifyNavigationForGameOver(isSeniorUser) {
         nav.innerHTML = `
         <ul>
           <li id="senior-manage-game-btn">Manage Game</li>
-          <li id="logout-btn" class="hidden">Log Out</li>
+          <li id="logout-btn">Log Out</li>
         </ul>
       `;
-
-        const seniorManageGameBtn = qs("#senior-manage-game-btn");
-        if (seniorManageGameBtn) {
-            seniorManageGameBtn.addEventListener("click", () => {
-                showPage("senior-manage-game");
-            });
-        }
     } else {
-        nav.innerHTML = `<ul><li id="logout-btn" class="hidden">Log Out</li></ul>`;
+        nav.innerHTML = `<ul><li id="logout-btn">Log Out</li></ul>`;
     }
 
-    const logoutBtn = qs("#logout-btn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", logout);
-    }
-}
-
-function navSetup() {const seeHandBtn = qs("#see-hand-btn");
-    const manageTradesBtn = qs("#manage-trades-btn");
-    const notificationsBtn = qs("#notifications-btn");
-    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
-    const seniorManageGameBtn = qs("#senior-manage-game-btn");
-    const seniorNotificationsBtn = qs("#senior-notifications-btn");
-    const logoutBtn = qs("#logout-btn");
-    const nav = qs("nav");
-    
-    if (seeHandBtn) seeHandBtn.classList.add("hidden");
-    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
-    if (notificationsBtn) notificationsBtn.classList.add("hidden");
-    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
-    if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
-    if (seniorNotificationsBtn) seniorNotificationsBtn.classList.add("hidden");
-    if (logoutBtn) logoutBtn.classList.add("hidden");
-    
-    if (isGameActive) {
-        if (isSenior) {
-            if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
-            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
-            if (seniorNotificationsBtn) seniorNotificationsBtn.classList.remove("hidden");
-        } else {
-            if (seeHandBtn) seeHandBtn.classList.remove("hidden");
-            if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
-            if (notificationsBtn) notificationsBtn.classList.remove("hidden");
-        }
-    } else {
-        if (isSenior) {
-            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
-        }
-    }
-    
-    if (logoutBtn) logoutBtn.classList.remove("hidden");
-    
-    if (isSenior) {
-        getAllHands();
-    } else {
-        populateTeamsDropdown();
-        listenForIncomingTrades();
-        populateRobberTargetDropdown();
-        loadDevCardDescriptions();
-    }
-    
     setupHamburgerMenu();
 }
 
@@ -2376,21 +2598,28 @@ function addManageGameToSenior() {
     }
 }
 
-function updatePopulatePageContent() {
-    const originalPopulatePageContent = populatePageContent;
+function showGameOverMenu() {
+    const menuToggle = qs("#menu-toggle");
+    if (!menuToggle) return;
 
-    return function (pageId) {
-        originalPopulatePageContent(pageId);
+    menuToggle.classList.remove("hidden");
 
-        if (pageId === "senior-manage-game") {
-            setupSimplifiedEndGame();
-        }
+    if (menuToggle.innerHTML.trim() === '') {
+        menuToggle.innerHTML = `
+            <span class="menu-is-closed">☰</span>
+            <span class="menu-is-open hidden">✕</span>
+        `;
+    }
 
-        updateGameManagementPageContent(pageId);
-    };
+    const openMenuBtn = menuToggle.querySelector(".menu-is-closed");
+    const closeMenuBtn = menuToggle.querySelector(".menu-is-open");
+
+    if (openMenuBtn) openMenuBtn.classList.remove("hidden");
+    if (closeMenuBtn) closeMenuBtn.classList.add("hidden");
+
+    const nav = qs("nav");
+    if (nav) nav.classList.add("hidden");
 }
-
-populatePageContent = updatePopulatePageContent();
 
 function setupSimplifiedEndGame() {
     const endGameBtn = qs("#end-game-btn");
@@ -2445,13 +2674,6 @@ function setupSimplifiedEndGame() {
     });
 }
 
-function updateGameManagementPageContent(pageId) {
-    if (pageId === "senior-manage-game") {
-        checkGameActive();
-        addGameManagementEventListeners();
-    }
-}
-
 /* setup */
 wholePageEvenListeners();
 setUpButtons();
@@ -2471,55 +2693,156 @@ function setupGameManagement() {
     addGameManagementEventListeners();
 }
 
-function setupHamburgerMenu() {const menuToggle = document.querySelector("#menu-toggle");
-    const closeMenuBtn = document.querySelector(".menu-is-open");
-    const openMenuBtn = document.querySelector(".menu-is-closed");
+function setupHamburgerMenu() {
+    const menuToggle = document.querySelector("#menu-toggle");
     const nav = document.querySelector("nav");
-    
+
     if (!menuToggle || !nav) {
-        console.error("Menu toggle or nav elements not found", {
-            menuToggle: !!menuToggle,
-            nav: !!nav,
-            openMenuBtn: !!openMenuBtn,
-            closeMenuBtn: !!closeMenuBtn
-        });
+        console.error("Menu toggle or nav elements not found");
         return;
     }
-    
-    function toggleMenuHandler() {
+
+    if (menuToggle.innerHTML.trim() === '') {
+        menuToggle.innerHTML = `
+            <span class="menu-is-closed">☰</span>
+            <span class="menu-is-open hidden">✕</span>
+        `;
+    }
+
+    const newMenuToggle = menuToggle.cloneNode(true);
+    menuToggle.parentNode.replaceChild(newMenuToggle, menuToggle);
+    const updatedOpenMenuBtn = newMenuToggle.querySelector(".menu-is-closed");
+    const updatedCloseMenuBtn = newMenuToggle.querySelector(".menu-is-open");
+
+    newMenuToggle.addEventListener("click", function () {
         const isNavHidden = nav.classList.contains("hidden");
-        
+
         if (isNavHidden) {
             nav.classList.remove("hidden");
-            openMenuBtn.classList.add("hidden");
-            closeMenuBtn.classList.remove("hidden");
+            updatedOpenMenuBtn.classList.add("hidden");
+            updatedCloseMenuBtn.classList.remove("hidden");
         } else {
             nav.classList.add("hidden");
-            openMenuBtn.classList.remove("hidden");
-            closeMenuBtn.classList.add("hidden");
+            updatedOpenMenuBtn.classList.remove("hidden");
+            updatedCloseMenuBtn.classList.add("hidden");
         }
-    }
-    
-    menuToggle.removeEventListener("click", toggleMenuHandler);
-    menuToggle.addEventListener("click", toggleMenuHandler);
+    });
 
     const navItems = document.querySelectorAll("nav li");
     navItems.forEach(item => {
-        item.addEventListener("click", () => {
-            nav.classList.add("hidden");
-            openMenuBtn.classList.remove("hidden");
-            closeMenuBtn.classList.add("hidden");
-        });
+        const newItem = item.cloneNode(true);
+        item.parentNode.replaceChild(newItem, item);
+
+        if (newItem.id === "logout-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                logout();
+            });
+        }
+        else if (newItem.id === "senior-manage-game-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("senior-manage-game");
+            });
+        }
+        else if (newItem.id === "senior-see-hands-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("senior-see-hands");
+            });
+        }
+        else if (newItem.id === "see-hand-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("personal-hand");
+            });
+        }
+        else if (newItem.id === "manage-trades-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("manage-trades");
+            });
+        }
+        else if (newItem.id === "notifications-btn") {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+                showPage("notifications");
+            });
+        }
+        else {
+            newItem.addEventListener("click", function () {
+                nav.classList.add("hidden");
+                updatedOpenMenuBtn.classList.remove("hidden");
+                updatedCloseMenuBtn.classList.add("hidden");
+            });
+        }
     });
 }
 
-function setupAfterLogin() {
-    checkGameActive().then(isGameActive => {
+function navSetup() {
+    const seeHandBtn = qs("#see-hand-btn");
+    const manageTradesBtn = qs("#manage-trades-btn");
+    const notificationsBtn = qs("#notifications-btn");
+    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    const seniorManageGameBtn = qs("#senior-manage-game-btn");
+    const logoutBtn = qs("#logout-btn");
+    const nav = qs("nav");
+
+    if (seeHandBtn) seeHandBtn.classList.add("hidden");
+    if (manageTradesBtn) manageTradesBtn.classList.add("hidden");
+    if (notificationsBtn) notificationsBtn.classList.add("hidden");
+    if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.add("hidden");
+    if (seniorManageGameBtn) seniorManageGameBtn.classList.add("hidden");
+    if (logoutBtn) logoutBtn.classList.add("hidden");
+
+    if (isGameActive) {
+        if (notificationsBtn) notificationsBtn.classList.remove("hidden");
+        if (isSenior) {
+            if (seniorSeeHandsBtn) seniorSeeHandsBtn.classList.remove("hidden");
+            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
+        } else {
+            if (seeHandBtn) seeHandBtn.classList.remove("hidden");
+            if (manageTradesBtn) manageTradesBtn.classList.remove("hidden");
+        }
+    } else {
+        if (isSenior) {
+            if (seniorManageGameBtn) seniorManageGameBtn.classList.remove("hidden");
+        }
+    }
+
+    if (logoutBtn) logoutBtn.classList.remove("hidden");
+
+    if (isSenior) {
+        getAllHands();
+    } else {
+        populateTeamsDropdown();
+        listenForIncomingTrades();
+        populateRobberTargetDropdown();
+    }
+
+    setupHamburgerMenu();
+}
+
+async function setupAfterLogin() {
+    await checkGameActive().then(isGameActive => {
         if (!isGameActive) {
             const gameStateRef = doc(db, "game_state", "current");
             getDoc(gameStateRef).then(gameStateDoc => {
                 if (gameStateDoc.exists() && gameStateDoc.data().winners) {
                     modifyNavigationForGameOver(isSenior);
+                    showGameOverMenu();
                     displayGameOver();
                     return;
                 } else {
@@ -2531,7 +2854,8 @@ function setupAfterLogin() {
         }
     });
 
-
     setupHamburgerMenu();
     listenForNotifications();
+
+    await loadDevCardDescriptions();
 }
