@@ -137,46 +137,45 @@
             <p id="trade-requests-last-updated" class="timestamp"></p>
             <section id="trade-request">
                 <h3>Request a Trade</h3>
-                <label>Team to Request From:
-                    <select id="team-to-request-from" required></select>
-                </label>
-                <label>Resources to Request:</label>
+                <h4>Team to Request From:</h4>
+                <select id="team-to-request-from" required></select>
+                <h4>Resources to Request:</h4>
                 <form>
                     <section id="resources-to-request">
-                        <div class="resource-request">
+                        <div class="number-entry">
                             <label>Grain:</label>
                             <input id="request-grain" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-request">
+                        <div class="number-entry">
                             <label>Wool:</label>
                             <input id="request-wool" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-request">
+                        <div class="number-entry">
                             <label>Brick:</label>
                             <input id="request-brick" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-request">
+                        <div class="number-entry">
                             <label>Lumber:</label>
                             <input id="request-lumber" type="number" min="0" value="0" />
                         </div>
                     </section>
                 </form>
-                <label>Resources to Offer:</label>
+                <h4>Resources to Offer:</h4>
                 <form>
                     <section id="resources-to-offer">
-                        <div class="resource-offer">
+                        <div class="number-entry">
                             <label>Grain:</label>
                             <input id="offer-grain" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-offer">
+                        <div class="number-entry">
                             <label>Wool:</label>
                             <input id="offer-wool" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-offer">
+                        <div class="number-entry">
                             <label>Brick:</label>
                             <input id="offer-brick" type="number" min="0" value="0" />
                         </div>
-                        <div class="resource-offer">
+                        <div class="number-entry">
                             <label>Lumber:</label>
                             <input id="offer-lumber" type="number" min="0" value="0" />
                         </div>
@@ -305,9 +304,10 @@
                                 <option value="lumber">Lumber</option>
                             </select>
                         </label>
-                        <label>Amount:
+                        <div class="number-entry">
+                            <label>Amount:</label>
                             <input id="amount-to-assign" type="number" min="1" max="10" value="1" />
-                        </label>
+                        </div>
                         <button id="submit-assign-resources" disabled>Submit</button>
                     </section>
                 </div>
@@ -370,9 +370,10 @@
                                 <option value="lumber">Lumber</option>
                             </select>
                         </label>
-                        <label>Amount:
+                        <div class="number-entry">
+                            <label>Amount:</label>
                             <input id="amount-to-remove" type="number" min="1" max="10" value="1" />
-                        </label>
+                        </div>
                         <button id="submit-remove-resources" disabled>Submit</button>
                     </section>
                 </div>

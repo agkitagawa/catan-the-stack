@@ -54,7 +54,7 @@ body {
     margin: 0;
     min-height: 100vh;
     font-size: 16px;
-    position: relative;
+    margin-top: 4.5rem;
     background-color: var(--gradient-top);
 }
 
@@ -94,11 +94,12 @@ body::after {
 
 header {
     background-color: var(--header-bg);
+    min-height: 4.5rem;
     width: 100%;
-    padding: 10px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 1rem 0;
+    box-shadow: 0 7px 5px var(--header-bg);
     text-align: center;
-    position: sticky;
+    position: fixed;
     top: 0;
     z-index: 100;
 }
@@ -141,6 +142,10 @@ nav li {
     width: 100%;
     font-size: 1.2rem;
     padding: 0.5rem 4.5rem;
+}
+
+nav li:not(:last-child) {
+    box-shadow: 0 10px 4px var(--header-bg) ;
 }
 
 .container {
@@ -199,21 +204,30 @@ h3 {
     margin-top: 1rem;
 }
 
+.team-hand,
+.senior-team-hand {
+    font-family: 'Cinzel', sans-serif;
+    text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.053);
+}
+
 .team-hand h3,
 .senior-team-hand h3 {
     text-align: center;
+    font-size: 2rem;
+    margin-top: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.383);
 }
 
-.team-hand h3 {
-    font-size: 2.5rem;
-}
-
-.senior-team-hand h3 {
-    font-size: 1.4rem;
+.total-points {
+    margin-bottom: 0;
 }
 
 .senior-team-hand h4 {
     font-size: 1rem;
+}
+
+.senior-team-hand h4 {
+    margin-top: 1rem;
 }
 
 .team-hand,
@@ -547,6 +561,18 @@ select {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    align-items: center;
+}
+
+#trade-request h4 {
+    width: 100%;
+    text-align: left;
+    margin-top: 0.2rem;
+    margin-bottom: 0;
+}
+
+#trade-request select {
+    margin-bottom: 1.2rem;
 }
 
 .pending-trade-request {
@@ -868,13 +894,13 @@ h1 {
     height: 140px;
     object-fit: contain;
     border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 img {
     width: 90px;
     height: 140px;
     border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.619);
 }
 
 .inactive-card .card-image {
@@ -886,11 +912,12 @@ img {
     background-color: #fff;
     border-radius: 50%;
     padding: 0.2rem 0.4rem;
+    font-size: 1rem;
     font-weight: bold;
     position: absolute;
     bottom: -5px;
     right: -5px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.547);
 }
 
 .resource-card .card-count {
@@ -1148,34 +1175,54 @@ img {
 form {
     display: flex;
     flex-direction: column;
-    background-color: transparent;
+    background-color: var(--card-bg);
     box-shadow: none;
     width: 100%;
-    padding: 0;
     align-items: center;
     text-align: left;
 }
 
-.resource-request,
-.resource-offer {
+.number-entry {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    background-color: transparent;
+    box-shadow: none !important;
+    padding: 0;
+    margin-top: 0.2rem !important;
 }
 
-.resource-request label,
-.resource-offer label {
+.number-entry label {
     width: 100%;
     text-align: left;
     margin-bottom: 0;
     padding-right: 1rem;
 }
 
-.resource-request input,
-.resource-offer input {
-    width: 2.5rem;
+.number-entry input {
+    width: 3rem;
     height: 1.8rem;
     font-size: 1rem;
     text-align: center;
+}
+
+#senior-manage-game .number-entry label {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0;
+    padding-right: 1rem;
+}
+
+#robber-section,
+#choose-2-section,
+#assign-resources-section,
+#assign-random-dev-cards-section,
+#assign-specific-dev-cards-section,
+#remove-resources-section,
+#remove-dev-card-section {
+    margin-top: 1rem;
+}
+
+#use-choose-2-resources h2 {
+    font-size: 2.3rem;
 }

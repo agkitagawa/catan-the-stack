@@ -49,6 +49,10 @@ let authCheckComplete = false;
 let isGameActive = false;
 let initialHash = "";
 
+if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'auto';
+}
+
 /* event listeners */
 function wholePageEvenListeners() {
     window.addEventListener("DOMContentLoaded", function () {
@@ -365,6 +369,7 @@ async function getAllHands() {
 
             const pointsDetails = gen("p");
             pointsDetails.classList.add("points-details");
+            pointsDetails.classList.add("hidden");
             teamSection.appendChild(pointsDetails);
 
             const devCardsHeader = gen("h4");
@@ -1139,6 +1144,7 @@ function showPage(pageId, pushState = true) {
 
         if (pushState && location.hash.substring(1) !== pageId) {
             history.pushState({ pageId }, "", `#${pageId}`);
+            window.scrollTo(0, 0);
         }
 
         if (pageId !== "login" && pageId !== "loading") {
