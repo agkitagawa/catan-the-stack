@@ -140,38 +140,40 @@
                 <label>Team to Request From:
                     <select id="team-to-request-from" required></select>
                 </label>
-                <label>Resources to Request:
+                <label>Resources to Request:</label>
+                <form>
                     <section id="resources-to-request">
-                        <label>Grain:
-                            <input id="request-grain" type="number" min="0" value="0" />
-                        </label>
-                        <label>Wool:
-                            <input id="request-wool" type="number" min="0" value="0" />
-                        </label>
-                        <label>Brick:
-                            <input id="request-brick" type="number" min="0" value="0" />
-                        </label>
-                        <label>Lumber:
-                            <input id="request-lumber" type="number" min="0" value="0" />
-                        </label>
+                        <div class="resource-request">
+                            <label>Grain:<input id="request-grain" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-request">
+                            <label>Wool:<input id="request-wool" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-request">
+                            <label>Brick:<input id="request-brick" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-request">
+                            <label>Lumber:<input id="request-lumber" type="number" min="0" value="0" /></label>
+                        </div>
                     </section>
-                </label>
-                <label>Resources to Offer:
+                </form>
+                <label>Resources to Offer:</label>
+                <form>
                     <section id="resources-to-offer">
-                        <label>Grain:
-                            <input id="offer-grain" type="number" min="0" value="0" />
-                        </label>
-                        <label>Wool:
-                            <input id="offer-wool" type="number" min="0" value="0" />
-                        </label>
-                        <label>Brick:
-                            <input id="offer-brick" type="number" min="0" value="0" />
-                        </label>
-                        <label>Lumber:
-                            <input id="offer-lumber" type="number" min="0" value="0" />
-                        </label>
+                        <div class="resource-offer">
+                            <label>Grain:<input id="offer-grain" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-offer">
+                            <label>Wool:<input id="offer-wool" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-offer">
+                            <label>Brick:<input id="offer-brick" type="number" min="0" value="0" /></label>
+                        </div>
+                        <div class="resource-offer">
+                            <label>Lumber:<input id="offer-lumber" type="number" min="0" value="0" /></label>
+                        </div>
                     </section>
-                </label>
+                </form>
                 <button id="submit-trade-request" disabled>Submit</button>
             </section>
 

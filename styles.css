@@ -427,7 +427,7 @@ select {
 
 #message {
     position: fixed;
-    bottom: 2rem;
+    bottom: 4rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -1143,4 +1143,15 @@ img {
 #cancel-end-game-btn {
     background-color: var(--gradient-bottom);
     color: #333;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    background-color: transparent;
+    box-shadow: none;
+    width: 100%;
+    padding: 0;
+    align-items: center;
+    text-align: left;
 }

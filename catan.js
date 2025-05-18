@@ -188,6 +188,8 @@ function logout() {
         if (email) email.value = "";
         if (password) password.value = "";
 
+        document.querySelectorAll("form").forEach(f => f.reset());
+        setDropdownDefaults();
         history.replaceState(null, "", "#login");
 
         const historyLength = window.history.length;
@@ -493,48 +495,49 @@ async function populateRobberTargetDropdown() {
     });
 }
 
-/* form clearing */
-function resetSeniorFormButtons() {
-    const managementSection = qs("#senior-manage-game");
-    if (!managementSection) return;
-
-    const buttons = managementSection.querySelectorAll("section button:not(#start-new-game-btn):not(#end-game-btn):not(#confirm-end-game-btn):not(#cancel-end-game-btn)");
-    buttons.forEach(btn => {
-        btn.disabled = true;
-    });
-
-    const selects = managementSection.querySelectorAll("section select");
-    selects.forEach(select => {
-        select.value = "";
-    });
-
-    const inputs = managementSection.querySelectorAll("section input");
-    inputs.forEach(input => {
-        input.value = 1;
-    });
+function resetForms() {
+    document.querySelectorAll("form").forEach(form => form.reset());
+    setDropdownDefaults();
 }
 
 /* button listeners */
 function setUpButtons() {
     ensureSeniorStatusIsSynchronized();
 
-    const loginForm = qs("#login-form");
-    const logoutBtn = qs("#logout-btn");
-    const seniorSeeHandsBtn = qs("#senior-see-hands-btn");
-    const seniorSubmitAssignResourcesBtn = qs("#submit-assign-resources");
-    const seniorSubmitAssignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
-    const seniorSubmitAssignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
-    const seniorSubmitRemoveResourcesBtn = qs("#submit-remove-resources");
-    const seniorSubmitRemoveDevCardBtn = qs("#submit-remove-dev-card");
-    const seeHandBtn = qs("#see-hand-btn");
-    const submitTradeBtn = qs("#submit-trade-request");
-    const manageTradesBtn = qs("#manage-trades-btn");
-    const submitRobberRequestBtn = qs("#submit-robber-request");
-    const submitChoose2RequestBtn = qs("#submit-choose-2-request");
-    const notificationsBtn = qs("#notifications-btn");
+    const oldLoginForm = qs("#login-form");
+    const oldLogoutBtn = qs("#logout-btn");
+    const oldSeniorSeeHandsBtn = qs("#senior-see-hands-btn");
+    const oldSeniorSubmitAssignResourcesBtn = qs("#submit-assign-resources");
+    const oldSeniorSubmitAssignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
+    const oldSeniorSubmitAssignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
+    const oldSeniorSubmitRemoveResourcesBtn = qs("#submit-remove-resources");
+    const oldSeniorSubmitRemoveDevCardBtn = qs("#submit-remove-dev-card");
+    const oldSeeHandBtn = qs("#see-hand-btn");
+    const oldSubmitTradeBtn = qs("#submit-trade-request");
+    const oldManageTradesBtn = qs("#manage-trades-btn");
+    const oldSubmitRobberRequestBtn = qs("#submit-robber-request");
+    const oldSubmitChoose2RequestBtn = qs("#submit-choose-2-request");
+    const oldNotificationsBtn = qs("#notifications-btn");
 
-    if (loginForm) {
-        loginForm.addEventListener("submit", login);
+    let newLoginForm;
+    let newLogoutBtn;
+    let newSeniorSeeHandsBtn;
+    let newSeniorSubmitAssignResourcesBtn;
+    let newSeniorSubmitAssignRandomDevCardBtn;
+    let newSeniorSubmitAssignSpecificDevCardBtn;
+    let newSeniorSubmitRemoveResourcesBtn;
+    let newSeniorSubmitRemoveDevCardBtn;
+    let newSeeHandBtn;
+    let newSubmitTradeBtn;
+    let newManageTradesBtn;
+    let newSubmitRobberRequestBtn;
+    let newSubmitChoose2RequestBtn;
+    let newNotificationsBtn;
+
+    if (oldLoginForm) {
+        newLoginForm = oldLoginForm.cloneNode(true);
+        oldLoginForm.parentNode.replaceChild(newLoginForm, oldLoginForm);
+        oldLoginForm.addEventListener("submit", login);
     }
 
     qs("#submit-login").addEventListener("click", function (e) {
@@ -544,20 +547,34 @@ function setUpButtons() {
         login(email, password);
     });
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", logout);
+    if (oldLogoutBtn) {
+        newLogoutBtn = oldLogoutBtn.cloneNode(true);
+        oldLogoutBtn.parentNode.replaceChild(newLogoutBtn, oldLogoutBtn);
+        oldLogoutBtn.addEventListener("submit", logout);
     }
 
-    if (isSenior) {
-        if (seniorSeeHandsBtn) {
-            seniorSeeHandsBtn.addEventListener("click", () => {
+    if (oldSeniorSeeHandsBtn) {
+        newSeniorSeeHandsBtn = oldSeniorSeeHandsBtn.cloneNode(true);
+        oldSeniorSeeHandsBtn.parentNode.replaceChild(newSeniorSeeHandsBtn, oldSeniorSeeHandsBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSeeHandsBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 showPage("senior-see-hands");
             });
+        } else {
+            newSeniorSeeHandsBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
         }
+    }
 
-        if (seniorSubmitAssignResourcesBtn) {
-            seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
+    if (oldSeniorSubmitAssignResourcesBtn) {
+        newSeniorSubmitAssignResourcesBtn = oldSeniorSubmitAssignResourcesBtn.cloneNode(true);
+        oldSeniorSubmitAssignResourcesBtn.parentNode.replaceChild(newSeniorSubmitAssignResourcesBtn, oldSeniorSubmitAssignResourcesBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitAssignResourcesBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-resources").value;
                 const resource = qs("#resource-to-assign").value;
@@ -567,12 +584,21 @@ function setUpButtons() {
                     return;
                 }
                 assignResourceCard(team, resource, amount);
-                resetSeniorFormButtons();
+                resetForms();
+            });
+        } else {
+            newSeniorSubmitAssignResourcesBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
             });
         }
+    }
 
-        if (seniorSubmitAssignRandomDevCardBtn) {
-            seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
+    if (oldSeniorSubmitAssignRandomDevCardBtn) {
+        newSeniorSubmitAssignRandomDevCardBtn = oldSeniorSubmitAssignRandomDevCardBtn.cloneNode(true);
+        oldSeniorSubmitAssignRandomDevCardBtn.parentNode.replaceChild(newSeniorSubmitAssignRandomDevCardBtn, oldSeniorSubmitAssignRandomDevCardBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-random-dev-card").value;
 
@@ -587,152 +613,161 @@ function setUpButtons() {
                 }
 
                 assignDevCard(team, card);
-                resetSeniorFormButtons();
+                resetForms();
+            });
+        } else {
+            newSeniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
             });
         }
+    }
 
-        if (seniorSubmitAssignSpecificDevCardBtn) {
-            seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
+    if (oldSeniorSubmitAssignSpecificDevCardBtn) {
+        newSeniorSubmitAssignSpecificDevCardBtn = oldSeniorSubmitAssignSpecificDevCardBtn.cloneNode(true);
+        oldSeniorSubmitAssignSpecificDevCardBtn.parentNode.replaceChild(newSeniorSubmitAssignSpecificDevCardBtn, oldSeniorSubmitAssignSpecificDevCardBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-assign-specific-dev-card").value;
                 const card = qs("#dev-card-to-assign").value;
                 assignDevCard(team, card);
-                resetSeniorFormButtons();
+                resetForms();
+            });
+        } else {
+            newSeniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
             });
         }
+    }
 
-        if (seniorSubmitRemoveResourcesBtn) {
-            seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
+    if (oldSeniorSubmitRemoveResourcesBtn) {
+        newSeniorSubmitRemoveResourcesBtn = oldSeniorSubmitRemoveResourcesBtn.cloneNode(true);
+        oldSeniorSubmitRemoveResourcesBtn.parentNode.replaceChild(newSeniorSubmitRemoveResourcesBtn, oldSeniorSubmitRemoveResourcesBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-remove-resources").value;
                 const resource = qs("#resource-to-remove").value;
                 const amount = Number(qs("#amount-to-remove").value);
+                if (amount < 1) {
+                    displayMessage("Amount must be at least 1.");
+                    return;
+                }
                 removeResourceCard(team, resource, amount);
-                resetSeniorFormButtons();
+                resetForms();
+            });
+        } else {
+            newSeniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
             });
         }
+    }
 
-        if (seniorSubmitRemoveDevCardBtn) {
-            seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
+    if (oldSeniorSubmitRemoveDevCardBtn) {
+        newSeniorSubmitRemoveDevCardBtn = oldSeniorSubmitRemoveDevCardBtn.cloneNode(true);
+        oldSeniorSubmitRemoveDevCardBtn.parentNode.replaceChild(newSeniorSubmitRemoveDevCardBtn, oldSeniorSubmitRemoveDevCardBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
                 const team = qs("#team-to-remove-dev-card").value;
                 const card = qs("#dev-card-to-remove").value;
                 removeDevCard(team, card);
-                resetSeniorFormButtons();
+                resetForms();
             });
-        }
-
-        if (seeHandBtn) {
-            seeHandBtn.addEventListener("click", () => {
-                displayMessage("What are you doing? Aren't you a senior?");
-            });
-        }
-
-        if (submitTradeBtn) {
-            submitTradeBtn.addEventListener("click", () => {
-                displayMessage("What are you doing? Aren't you a senior?");
-            });
-        }
-
-        if (manageTradesBtn) {
-            manageTradesBtn.addEventListener("click", () => {
-                displayMessage("What are you doing? Aren't you a senior?");
-            });
-        }
-
-        if (submitRobberRequestBtn) {
-            submitRobberRequestBtn.addEventListener("click", () => {
-                displayMessage("What are you doing? Aren't you a senior?");
-            });
-        }
-
-        if (submitChoose2RequestBtn) {
-            submitChoose2RequestBtn.addEventListener("click", () => {
-                displayMessage("What are you doing? Aren't you a senior?");
-            });
-        }
-    } else {
-        if (seniorSeeHandsBtn) {
-            seniorSeeHandsBtn.addEventListener("click", () => {
+        } else {
+            newSeniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
                 displayMessage("Bro, you're not a senior.");
             });
         }
+    }
 
-        if (seniorSubmitAssignResourcesBtn) {
-            seniorSubmitAssignResourcesBtn.addEventListener("click", () => {
-                displayMessage("Bro, you're not a senior.");
-            });
-        }
+    if (oldSeeHandBtn) {
+        newSeeHandBtn = oldSeeHandBtn.cloneNode(true);
+        oldSeeHandBtn.parentNode.replaceChild(newSeeHandBtn, oldSeeHandBtn);
 
-        if (seniorSubmitAssignRandomDevCardBtn) {
-            seniorSubmitAssignRandomDevCardBtn.addEventListener("click", () => {
-                displayMessage("Bro, you're not a senior.");
-            });
-        }
-
-        if (seniorSubmitAssignSpecificDevCardBtn) {
-            seniorSubmitAssignSpecificDevCardBtn.addEventListener("click", () => {
-                displayMessage("Bro, you're not a senior.");
-            });
-        }
-
-        if (seniorSubmitRemoveResourcesBtn) {
-            seniorSubmitRemoveResourcesBtn.addEventListener("click", () => {
-                displayMessage("Bro, you're not a senior.");
-            });
-        }
-
-        if (seniorSubmitRemoveDevCardBtn) {
-            seniorSubmitRemoveDevCardBtn.addEventListener("click", () => {
-                displayMessage("Bro, you're not a senior.");
-            });
-        }
-
-        if (seeHandBtn) {
-            seeHandBtn.addEventListener("click", () => {
+        if (!isSenior || localStorage.getItem("isSenior") !== "true") {
+            newSeeHandBtn.addEventListener("click", () => {
                 showPage("personal-hand");
             });
-        }
-
-        if (submitTradeBtn) {
-            submitTradeBtn.addEventListener("click", () => {
-                submitTradeRequest()
+        } else {
+            newSeeHandBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
             });
         }
+    }
 
-        if (manageTradesBtn) {
-            manageTradesBtn.addEventListener("click", () => {
+    if (oldSubmitTradeBtn) {
+        newSubmitTradeBtn = oldSubmitTradeBtn.cloneNode(true);
+        oldSubmitTradeBtn.parentNode.replaceChild(newSubmitTradeBtn, oldSubmitTradeBtn);
+
+        if (!isSenior || localStorage.getItem("isSenior") !== "true") {
+            newSubmitTradeBtn.addEventListener("click", () => {
+                submitTradeRequest();
+            });
+        } else {
+            newSubmitTradeBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+    }
+
+    if (oldManageTradesBtn) {
+        newManageTradesBtn = oldManageTradesBtn.cloneNode(true);
+        oldManageTradesBtn.parentNode.replaceChild(newManageTradesBtn, oldManageTradesBtn);
+
+        if (!isSenior || localStorage.getItem("isSenior") !== "true") {
+            newManageTradesBtn.addEventListener("click", () => {
                 const tradeRequestsTimestamp = qs("#trade-requests-last-updated");
                 if (tradeRequestsTimestamp) {
                     tradeRequestsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
                 }
                 showPage("manage-trades");
             });
-        }
-
-        if (submitRobberRequestBtn) {
-            submitRobberRequestBtn.addEventListener("click", () => {
-                useRobber();
-                const robberSelect = qs("#robber-target-team");
-                robberSelect.value = "";
-                submitRobberRequestBtn.disabled = true;
-            });
-        }
-
-        if (submitChoose2RequestBtn) {
-            submitChoose2RequestBtn.addEventListener("click", () => {
-                useChoose2Resources();
-                const res1 = qs("#choose-2-resource1");
-                const res2 = qs("#choose-2-resource2");
-                res1.value = "";
-                res2.value = "";
-                submitChoose2RequestBtn.disabled = true;
+        } else {
+            newManageTradesBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
             });
         }
     }
 
-    if (notificationsBtn) {
-        notificationsBtn.addEventListener("click", () => {
+    if (oldSubmitRobberRequestBtn) {
+        newSubmitRobberRequestBtn = oldSubmitRobberRequestBtn.cloneNode(true);
+        oldSubmitRobberRequestBtn.parentNode.replaceChild(newSubmitRobberRequestBtn, oldSubmitRobberRequestBtn);
+
+        if (!isSenior || localStorage.getItem("isSenior") !== "true") {
+            newSubmitRobberRequestBtn.addEventListener("click", () => {
+                useRobber();
+            });
+        } else {
+            newSubmitRobberRequestBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+    }
+
+    if (oldSubmitChoose2RequestBtn) {
+        newSubmitChoose2RequestBtn = oldSubmitChoose2RequestBtn.cloneNode(true);
+        oldSubmitChoose2RequestBtn.parentNode.replaceChild(newSubmitChoose2RequestBtn, oldSubmitChoose2RequestBtn);
+
+        if (!isSenior || localStorage.getItem("isSenior") !== "true") {
+            newSubmitChoose2RequestBtn.addEventListener("click", () => {
+                useChoose2Resources();
+            });
+        } else {
+            newSubmitChoose2RequestBtn.addEventListener("click", () => {
+                displayMessage("What are you doing? Aren't you a senior?");
+            });
+        }
+    }
+
+    if (oldNotificationsBtn) {
+        newNotificationsBtn = oldNotificationsBtn.cloneNode(true);
+        oldNotificationsBtn.parentNode.replaceChild(newNotificationsBtn, oldNotificationsBtn);
+
+        newNotificationsBtn.addEventListener("click", () => {
             const notificationsTimestamp = qs("#notifications-last-updated");
             if (notificationsTimestamp) {
                 notificationsTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
@@ -1534,6 +1569,8 @@ async function calculateFinalScores() {
 
 /* card management */
 async function assignResourceCard(teamId, resourceType, amount) {
+    console.log("assignResourceCard got teamId =", teamId);
+    if (!teamId) throw new Error("teamId is missing!");
     const isAssigningToSelf = teamId === teamColor;
 
     if (!isAssigningToSelf && !forceSeniorRoleCheck()) {
@@ -3138,6 +3175,7 @@ assignResourceCard = function (teamId, resourceType, amount) {
     }
 
     if (userIsSenior) {
+        console.log("assignResourceCard called by senior, teamId =", teamId);
         return originalAssignResourceCard(teamId, resourceType, amount);
     }
 
@@ -3232,7 +3270,6 @@ useChoose2Resources = function () {
 
 /* setup */
 wholePageEvenListeners();
-setUpButtons();
 forceSelections();
 showPage("loading", false);
 
@@ -3479,7 +3516,7 @@ function setupNavigationSecurely() {
                     e.stopPropagation();
 
                     if (seniorOnlyPages.includes(pageId)) {
-                        displayMessage("Bro, you're not a senior.");
+                        displayMessage("Unsuccessful. If you actually are a senior, refresh the page. If you're not, kindly leave.");
                     } else {
                         displayMessage("What are you doing? Aren't you a senior?");
                     }
@@ -3533,12 +3570,14 @@ async function setupAfterLogin() {
         }
     });
 
+    ensureSeniorStatusIsSynchronized()
+    setUpButtons();
+    forceSelections();
     setupHamburgerMenu();
     setupNavigationSecurely();
     listenForNotifications();
     enhanceHashChangeListener();
     await loadDevCardDescriptions();
-    ensureSeniorStatusIsSynchronized();
 
     if (isSenior) {
         const seniorElements = document.querySelectorAll(".senior-only");
@@ -3549,3 +3588,8 @@ async function setupAfterLogin() {
     forceSeniorRoleCheck();
     return Promise.resolve();
 }
+
+wholePageEvenListeners();
+setUpButtons();
+forceSelections();
+showPage("loading", false);
