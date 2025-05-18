@@ -1155,3 +1155,27 @@ form {
     align-items: center;
     text-align: left;
 }
+
+.resource-request,
+.resource-offer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.resource-request label,
+.resource-offer label {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0;
+    padding-right: 1rem;
+}
+
+.resource-request input,
+.resource-offer input {
+    width: 2.5rem;
+    height: 1.8rem;
+    font-size: 1rem;
+    text-align: center;
+}
