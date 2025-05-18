@@ -32,6 +32,7 @@
     --gradient-middle: #b17226;
     --gradient-bottom: #d4af37;
     --gradient-text: #edda9e;
+    --nav-option-bg: #A0543D;
 }
 
 * {
@@ -135,26 +136,24 @@ nav li {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--gradient-text);
     padding: 0.3rem 0.8rem;
-    border-radius: 1px;
+    border-radius: 2px;
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.2s;
     width: 100%;
     font-size: 1.2rem;
     padding: 0.5rem 4.5rem;
-}
-
-nav li:not(:last-child) {
-    box-shadow: 0 10px 4px var(--header-bg) ;
+    box-shadow: 
+    0    0  8px 0px rgba(42, 21, 16, 0.187),
+    0    1px 2px rgba(0, 0, 0, 0.265);  
 }
 
 .container {
     max-width: 800px;
     margin: 20px auto;
     padding: 20px;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(4, 0, 0, 0.9);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     text-align: center;
 }
 
@@ -168,9 +167,8 @@ p {
     font-family: 'Geist Mono', -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--dark-text);
     border: none;
-    border-radius: 1px;
     cursor: pointer;
-    font-weight: bold;
+    margin-top: 1px;
 }
 
 main {
