@@ -1074,6 +1074,12 @@ function displayMessage(msg) {
 }
 
 function showPage(pageId, pushState = true) {
+    if (!document.getElementById(pageId)) {
+      displayMessage("Invalid URL — redirecting to Home");
+      pageId = "home";
+      history.replaceState({ pageId }, "", "#home");
+    }
+
     forceSeniorRoleCheck();
 
     if (pageId === "loading") {
