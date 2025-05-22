@@ -512,7 +512,8 @@ function setUpButtons() {
     const oldLoginForm = qs("#login-form");
     const oldLogoutBtn = qs("#logout-btn");
     const oldSeniorSeeHandsBtn = qs("#senior-see-hands-btn");
-    const oldSeniorSubmitAssignResourcesBtn = qs("#submit-assign-resources");
+    const oldSeniorSubmitAssignRandomResourcesBtn = qs("#submit-assign-random-resources");
+    const oldSeniorSubmitAssignResourcesBtn = qs("#submit-assign-specific-resources");
     const oldSeniorSubmitAssignRandomDevCardBtn = qs("#submit-assign-random-dev-card");
     const oldSeniorSubmitAssignSpecificDevCardBtn = qs("#submit-assign-specific-dev-card");
     const oldSeniorSubmitRemoveResourcesBtn = qs("#submit-remove-resources");
@@ -527,6 +528,7 @@ function setUpButtons() {
     let newLoginForm;
     let newLogoutBtn;
     let newSeniorSeeHandsBtn;
+    let newSeniorSubmitAssignRandomResourcesBtn;
     let newSeniorSubmitAssignResourcesBtn;
     let newSeniorSubmitAssignRandomDevCardBtn;
     let newSeniorSubmitAssignSpecificDevCardBtn;
@@ -574,6 +576,29 @@ function setUpButtons() {
         }
     }
 
+    if (oldSeniorSubmitAssignRandomResourcesBtn) {
+        newSeniorSubmitAssignRandomResourcesBtn = oldSeniorSubmitAssignRandomResourcesBtn.cloneNode(true);
+        oldSeniorSubmitAssignRandomResourcesBtn.parentNode.replaceChild(newSeniorSubmitAssignRandomResourcesBtn, oldSeniorSubmitAssignRandomResourcesBtn);
+
+        if (isSenior || localStorage.getItem("isSenior") === "true") {
+            newSeniorSubmitAssignRandomResourcesBtn.addEventListener("click", () => {
+                ensureSeniorStatusIsSynchronized();
+                const team = qs("#team-to-assign-random-resources").value;
+                const amount = Number(qs("#random-amount-to-assign").value);
+                if (amount < 1) {
+                    displayMessage("Amount must be at least 1.");
+                    return;
+                }
+                assignRandomResourceCard(team, amount);
+                resetForms();
+            });
+        } else {
+            newSeniorSubmitAssignRandomResourcesBtn.addEventListener("click", () => {
+                displayMessage("Bro, you're not a senior.");
+            });
+        }
+    }
+
     if (oldSeniorSubmitAssignResourcesBtn) {
         newSeniorSubmitAssignResourcesBtn = oldSeniorSubmitAssignResourcesBtn.cloneNode(true);
         oldSeniorSubmitAssignResourcesBtn.parentNode.replaceChild(newSeniorSubmitAssignResourcesBtn, oldSeniorSubmitAssignResourcesBtn);
@@ -581,9 +606,9 @@ function setUpButtons() {
         if (isSenior || localStorage.getItem("isSenior") === "true") {
             newSeniorSubmitAssignResourcesBtn.addEventListener("click", () => {
                 ensureSeniorStatusIsSynchronized();
-                const team = qs("#team-to-assign-resources").value;
+                const team = qs("#team-to-assign-specific-resources").value;
                 const resource = qs("#resource-to-assign").value;
-                const amount = Number(qs("#amount-to-assign").value);
+                const amount = Number(qs("#specific-amount-to-assign").value);
                 if (amount < 1) {
                     displayMessage("Amount must be at least 1.");
                     return;
@@ -894,9 +919,21 @@ function forceSelections() {
         });
     }
 
-    const assignResourcesTeamSelect = qs("#team-to-assign-resources");
+    const assignRandomResourcesTeamSelect = qs("#team-to-assign-random-resources");
+    const assignRandomResourcesBtn = qs("#submit-assign-random-resources");
+
+    function updateAssignRandomResourcesButtonState() {
+        const val1 = assignRandomResourcesTeamSelect.value;
+        assignRandomResourcesBtn.disabled = !val1;
+    }
+
+    if (assignRandomResourcesTeamSelect && assignRandomResourcesBtn) {
+        assignRandomResourcesTeamSelect.addEventListener("change", updateAssignRandomResourcesButtonState);
+    }
+
+    const assignResourcesTeamSelect = qs("#team-to-assign-specific-resources");
     const assignResourcesResourceSelect = qs("#resource-to-assign");
-    const assignResourcesBtn = qs("#submit-assign-resources");
+    const assignResourcesBtn = qs("#submit-assign-specific-resources");
 
     function updateAssignResourcesButtonState() {
         const val1 = assignResourcesTeamSelect.value;
@@ -1075,9 +1112,9 @@ function displayMessage(msg) {
 
 function showPage(pageId, pushState = true) {
     if (!document.getElementById(pageId)) {
-      displayMessage("Invalid URL — redirecting to Home");
-      pageId = "home";
-      history.replaceState({ pageId }, "", "#home");
+        displayMessage("Invalid URL — redirecting to Home");
+        pageId = "home";
+        history.replaceState({ pageId }, "", "#home");
     }
 
     forceSeniorRoleCheck();
@@ -1242,12 +1279,69 @@ async function populatePageContent(pageId) {
             break;
 
         case "senior-manage-game":
+            // Clear all form inputs when navigating to senior-manage-game page
+            clearSeniorManageGameForms();
             break;
 
         default:
             break;
     }
 }
+
+function clearSeniorManageGameForms() {
+    const elementsToReset = [
+        "#team-to-assign-random-resources",
+        "#random-amount-to-assign",
+
+        "#team-to-assign-specific-resources",
+        "#resource-to-assign",
+        "#specific-amount-to-assign",
+
+        "#team-to-assign-random-dev-card",
+        "#team-to-assign-specific-dev-card",
+        "#dev-card-to-assign",
+
+        "#team-to-remove-resources",
+        "#resource-to-remove",
+        "#amount-to-remove",
+
+        "#team-to-remove-dev-card",
+        "#dev-card-to-remove"
+    ];
+
+    elementsToReset.forEach(selector => {
+        const element = qs(selector);
+        if (element) {
+            if (element.tagName === "SELECT") {
+                element.selectedIndex = 0;
+                element.value = "";
+            } else if (element.tagName === "INPUT") {
+                if (element.type === "number") {
+                    element.value = "1";
+                } else {
+                    element.value = "";
+                }
+            }
+        }
+    });
+
+    const buttonsToDisable = [
+        "#submit-assign-random-resources",
+        "#submit-assign-specific-resources",
+        "#submit-assign-random-dev-card",
+        "#submit-assign-specific-dev-card",
+        "#submit-remove-resources",
+        "#submit-remove-dev-card"
+    ];
+
+    buttonsToDisable.forEach(selector => {
+        const button = qs(selector);
+        if (button) {
+            button.disabled = true;
+        }
+    });
+}
+
 async function showPersonalHand() {
     if (!teamColor) {
         displayMessage("You must be logged in with a team to see your hand.");
@@ -1580,8 +1674,75 @@ async function calculateFinalScores() {
 }
 
 /* card management */
+async function assignRandomResourceCard(teamId, amount) {
+    if (!teamId) throw new Error("teamId is missing!");
+    const isAssigningToSelf = teamId === teamColor;
+
+    if (!isAssigningToSelf && !forceSeniorRoleCheck()) {
+        displayMessage("Bro, you're not a senior.");
+        return;
+    }
+
+    try {
+        const teamRef = doc(db, "teams", teamId);
+        const teamSnap = await getDoc(teamRef);
+
+        if (!teamSnap.exists()) {
+            console.error(`Team ${teamId} not found.`);
+            return;
+        }
+
+        const data = teamSnap.data();
+        const resources = ["grain", "wool", "brick", "lumber"];
+        const updates = {};
+        const assignedResources = [];
+
+        for (let i = 0; i < amount; i++) {
+            const randomResource = resources[Math.floor(Math.random() * resources.length)];
+            const currentAmount = updates[randomResource] || data[randomResource] || 0;
+            updates[randomResource] = currentAmount + 1;
+            assignedResources.push(randomResource);
+        }
+
+        for (const [resource, newAmount] of Object.entries(updates)) {
+            await updateDoc(teamRef, {
+                [resource]: newAmount
+            });
+        }
+
+        let message = "";
+        const resourceCounts = {};
+        assignedResources.forEach(resource => {
+            resourceCounts[resource] = (resourceCounts[resource] || 0) + 1;
+        });
+
+        const resourceMessages = Object.entries(resourceCounts).map(([resource, count]) => {
+            return `${count} ${resource}${count > 1 ? ' cards' : ' card'}`;
+        });
+
+        if (resourceMessages.length === 1) {
+            message = `You received ${resourceMessages[0]}!`;
+        } else if (resourceMessages.length === 2) {
+            message = `You received ${resourceMessages.join(' and ')}!`;
+        } else {
+            message = `You received ${resourceMessages.slice(0, -1).join(', ')}, and ${resourceMessages[resourceMessages.length - 1]}!`;
+        }
+
+        await addNotification(teamId, message);
+
+        if (!isAssigningToSelf) {
+            const resourceSummary = Object.entries(resourceCounts).map(([resource, count]) => {
+                return `${count} ${resource}`;
+            }).join(', ');
+            await addNotification(seniorRole, `${resourceSummary} given to Team ${teamId}`);
+            displayMessage(`${resourceSummary} given to Team ${teamId}`);
+        }
+    } catch (err) {
+        console.error("Error assigning random resource cards:", err);
+    }
+}
+
 async function assignResourceCard(teamId, resourceType, amount) {
-    console.log("assignResourceCard got teamId =", teamId);
     if (!teamId) throw new Error("teamId is missing!");
     const isAssigningToSelf = teamId === teamColor;
 
@@ -1615,12 +1776,12 @@ async function assignResourceCard(teamId, resourceType, amount) {
             message = `You received ${amount} ${resourceType} card!`;
         }
         if (isSenior && !isAssigningToSelf) {
-            displayMessage("Success");
+            displayMessage(`${amount} ${resourceType} given to Team ${teamId}`);
         }
         await addNotification(teamId, message);
 
         if (!isAssigningToSelf) {
-            await addNotification(seniorRole, `${amount} ${resourceType} card(s) given to Team ${teamId}`);
+            await addNotification(seniorRole, `${amount} ${resourceType} given to Team ${teamId}`);
         }
     } catch (err) {
         console.error("Error assigning resource card:", err);
@@ -3178,6 +3339,22 @@ function ensureSeniorStatusIsSynchronized() {
     }
 }
 
+const originalAssignRandomResourceCard = assignRandomResourceCard;
+assignRandomResourceCard = function (teamId, amount) {
+    const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
+
+    if (teamId === teamColor && !userIsSenior) {
+        return originalAssignRandomResourceCard(teamId, amount);
+    }
+
+    if (userIsSenior) {
+        return originalAssignRandomResourceCard(teamId, amount);
+    }
+
+    displayMessage("Bro, you're not a senior.");
+    return;
+};
+
 const originalAssignResourceCard = assignResourceCard;
 assignResourceCard = function (teamId, resourceType, amount) {
     const userIsSenior = isSenior || localStorage.getItem("isSenior") === "true";
@@ -3187,7 +3364,6 @@ assignResourceCard = function (teamId, resourceType, amount) {
     }
 
     if (userIsSenior) {
-        console.log("assignResourceCard called by senior, teamId =", teamId);
         return originalAssignResourceCard(teamId, resourceType, amount);
     }
 

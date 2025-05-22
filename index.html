@@ -284,10 +284,30 @@
                 <h2>Manage Teams' Hands</h2>
 
                 <div>
-                    <h3>Assign Resources</h3>
-                    <section id="assign-resources-section">
+                    <h3>Assign Random Resources</h3>
+                    <section id="assign-random-resources-section">
                         <label>Team:
-                            <select id="team-to-assign-resources" required>
+                            <select id="team-to-assign-random-resources" required>
+                                <option value="" disabled selected>Select a team</option>
+                                <option value="Green">Green</option>
+                                <option value="Red">Red</option>
+                                <option value="Blue">Blue</option>
+                                <option value="White">White</option>
+                            </select>
+                        </label>
+                        <div class="number-entry">
+                            <label>Amount:</label>
+                            <input id="random-amount-to-assign" type="number" min="1" max="10" value="1" />
+                        </div>
+                        <button id="submit-assign-random-resources" disabled>Submit</button>
+                    </section>
+                </div>
+
+                <div>
+                    <h3>Assign Specific Resources</h3>
+                    <section id="assign-specific-resources-section">
+                        <label>Team:
+                            <select id="team-to-assign-specific-resources" required>
                                 <option value="" disabled selected>Select a team</option>
                                 <option value="Green">Green</option>
                                 <option value="Red">Red</option>
@@ -306,9 +326,9 @@
                         </label>
                         <div class="number-entry">
                             <label>Amount:</label>
-                            <input id="amount-to-assign" type="number" min="1" max="10" value="1" />
+                            <input id="specific-amount-to-assign" type="number" min="1" max="10" value="1" />
                         </div>
-                        <button id="submit-assign-resources" disabled>Submit</button>
+                        <button id="submit-assign-specific-resources" disabled>Submit</button>
                     </section>
                 </div>
                 <div>
